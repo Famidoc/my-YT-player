@@ -15,7 +15,7 @@
   <meta name="apple-mobile-web-app-title" content="My YT Player">
   <link rel="apple-touch-icon" href="icon-192.png">
 
-  <!-- 載入 Tailwind CSS (僅用於靜態外框排版) -->
+  <!-- 載入 Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- 載入 Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -29,71 +29,6 @@
     .view-container { transition: opacity 0.3s ease; position: absolute; inset: 0; width: 100%; height: 100%; }
     .view-hidden { opacity: 0; pointer-events: none; z-index: -10; }
     .view-active { opacity: 1; z-index: 10; }
-
-    /* =========================================================================
-       🔥 核心抗干擾 CSS 區塊 🔥
-       (徹底解決 Tailwind CDN 動態盲區與 NAS XSS 阻擋，JS 中絕對不使用 style="...")
-       ========================================================================= */
-
-    /* 1. 總影片庫網格卡片 */
-    .fc-grid-card { background-color: #030712; border: 1px solid #1f2937; border-radius: 0.5rem; overflow: hidden; display: flex; flex-direction: column; transition: border-color 0.2s; }
-    .fc-grid-card:hover { border-color: #4b5563; }
-    .fc-thumb-container { position: relative; width: 100%; padding-bottom: 56.25%; background-color: #000; flex-shrink: 0; }
-    .fc-thumb { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-    .fc-overlay { position: absolute; inset: 0; background-color: rgba(0,0,0,0.5); opacity: 0; transition: opacity 0.2s; display: flex; align-items: center; justify-content: center; gap: 0.75rem; }
-    .fc-grid-card:hover .fc-overlay { opacity: 1; }
-    
-    /* 按鈕樣式 */
-    .fc-btn-circle { padding: 0.5rem; border-radius: 9999px; color: white; border: none; cursor: pointer; display: flex; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); transition: background-color 0.2s; }
-    .fc-btn-blue { background-color: #2563eb; }
-    .fc-btn-blue:hover { background-color: #3b82f6; }
-    .fc-btn-red { background-color: #dc2626; }
-    .fc-btn-red:hover { background-color: #ef4444; }
-    .fc-btn-sm { padding: 6px; }
-
-    /* 卡片文字區 */
-    .fc-card-info { padding: 0.75rem; flex: 1; display: flex; flex-direction: column; min-height: 70px; }
-    .fc-card-title { font-weight: 500; font-size: 0.875rem; color: #e5e7eb; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin: 0 0 0.5rem 0; line-height: 1.4; }
-    .fc-tag { align-self: flex-start; background-color: #1f2937; color: #9ca3af; font-size: 10px; padding: 2px 6px; border-radius: 4px; }
-
-    /* 動態分類標籤 */
-    .fc-tab-active { padding: 6px 16px; border-radius: 9999px; font-size: 14px; font-weight: 500; white-space: nowrap; background-color: #2563eb; color: #fff; border: none; cursor: pointer; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-    .fc-tab-inactive { padding: 6px 16px; border-radius: 9999px; font-size: 14px; font-weight: 500; white-space: nowrap; background-color: #1f2937; color: #d1d5db; border: none; cursor: pointer; transition: background-color 0.2s; }
-    .fc-tab-inactive:hover { background-color: #374151; color: #fff; }
-
-    /* 2. 列表清單元件 (建立清單、播放清單) */
-    .fc-list-item { display: flex; gap: 0.75rem; padding: 0.5rem; border-radius: 0.5rem; background-color: rgba(31,41,55,0.6); align-items: center; margin-bottom: 0.5rem; border: 1px solid transparent; transition: background-color 0.2s; border-left: 4px solid transparent; }
-    .fc-list-item:hover { background-color: rgba(55,65,81,0.6); }
-    .fc-list-item.active { background-color: #1f2937; border-left: 4px solid #ef4444; }
-    .fc-list-thumb-lg { position: relative; width: 96px; height: 64px; flex-shrink: 0; background-color: #000; border-radius: 4px; overflow: hidden; }
-    .fc-list-thumb-sm { position: relative; width: 64px; height: 48px; flex-shrink: 0; background-color: #000; border-radius: 4px; overflow: hidden; }
-    .fc-list-info { flex: 1; min-width: 0; }
-    .fc-list-title { font-weight: 500; font-size: 13px; color: #9ca3af; margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-    .fc-list-title.active { color: #fff; }
-    .fc-list-tag { display: block; font-size: 10px; color: #6b7280; margin-top: 4px; }
-    .fc-idx { color: #6b7280; font-size: 12px; width: 20px; text-align: center; flex-shrink: 0; font-family: monospace; }
-    .fc-list-actions { display: flex; gap: 4px; flex-shrink: 0; align-items: center; }
-    
-    .fc-icon-btn { padding: 6px; color: #9ca3af; background-color: transparent; border-radius: 4px; border: none; cursor: pointer; transition: all 0.2s; display: flex; }
-    .fc-icon-btn.play:hover { color: #fff; background-color: #dc2626; }
-    .fc-icon-btn.play.active { color: #fff; }
-    .fc-icon-btn.del:hover { color: #fff; background-color: #4b5563; }
-
-    /* 3. 正在播放列 */
-    .fc-np-img { width: 64px; height: 48px; object-fit: cover; border-radius: 4px; flex-shrink: 0; display: none; }
-    @media (min-width: 640px) { .fc-np-img { display: block; } }
-    .fc-np-box { flex: 1; min-width: 0; text-align: left; }
-    .fc-np-title { font-weight: 600; color: #f3f4f6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; margin: 0; }
-    .fc-np-sub { font-size: 10px; color: #9ca3af; margin: 2px 0 0 0; }
-
-    /* 4. 空狀態提示 & 圖示強制尺寸 */
-    .fc-empty-state { grid-column: 1 / -1; padding: 3rem 1rem; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #6b7280; text-align: center; }
-    .icon-sm { width: 16px; height: 16px; }
-    .icon-md { width: 20px; height: 20px; }
-    .icon-lg { width: 24px; height: 24px; }
-    .icon-xl { width: 48px; height: 48px; }
-    .opacity-20 { opacity: 0.2; }
-    .mb-4 { margin-bottom: 1rem; }
   </style>
 </head>
 <body class="bg-gray-950 text-gray-100 overflow-hidden font-sans selection:bg-red-500/30 flex flex-col md:flex-row h-[100dvh] w-full">
@@ -130,7 +65,7 @@
          <i data-lucide="info" class="w-4 h-4 shrink-0"></i> <span>資料安全儲存於本地端</span>
        </div>
        <div class="text-[10px] text-gray-500 mt-1">
-         @2026 by Famidoc Chang & Gemini 3.1 pro
+         @2026 by Famidoc Chang & Gemini
        </div>
     </div>
   </div>
@@ -170,7 +105,7 @@
     <!-- 2. 建立播放清單分頁 -->
     <div id="view-build" class="view-container view-hidden flex flex-col md:flex-row p-3 md:p-6 gap-3 md:gap-6 w-full">
       <div class="w-full md:w-1/2 flex-1 flex flex-col bg-gray-900/80 rounded-xl border border-gray-800 p-3 md:p-5 shadow-lg min-h-0">
-        <h2 class="text-base md:text-xl font-bold mb-3 flex items-center gap-2 text-gray-100"><i data-lucide="search" class="text-blue-400 w-5 h-5"></i> 從影片庫搜尋</h2>
+        <h2 class="text-base md:text-xl font-bold mb-3 flex items-center gap-2 text-gray-100"><i data-lucide="search" class="w-5 h-5 text-blue-400"></i> 從影片庫搜尋</h2>
         <div class="flex gap-2 mb-3 shrink-0">
           <input type="text" id="search-input" oninput="renderSearch()" placeholder="輸入關鍵字..." class="flex-1 bg-gray-950 border border-gray-700 text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 transition">
           <button onclick="addAllFiltered()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-lg transition font-medium whitespace-nowrap shadow-lg text-sm">全部加入</button>
@@ -180,26 +115,26 @@
 
       <div class="w-full md:w-1/2 flex-1 flex flex-col bg-gray-900/80 rounded-xl border border-gray-800 p-3 md:p-5 shadow-lg min-h-0">
         <div class="flex items-center justify-between mb-3 shrink-0">
-          <h2 class="text-base md:text-xl font-bold flex items-center gap-2 text-gray-100"><i data-lucide="list-video" class="text-red-500 w-5 h-5"></i> 播放清單 (<span id="playlist-count">0</span>)</h2>
+          <h2 class="text-base md:text-xl font-bold flex items-center gap-2 text-gray-100"><i data-lucide="list-video" class="w-5 h-5 text-red-500"></i> 播放清單 (<span id="playlist-count">0</span>)</h2>
           <button onclick="clearPlaylist()" class="text-xs md:text-sm text-gray-400 hover:text-red-400 transition flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-800">
-            <i data-lucide="trash-2" class="icon-sm"></i> 全部清空
+            <i data-lucide="trash-2" class="w-4 h-4"></i> 全部清空
           </button>
         </div>
         <div id="playlist-container" class="flex-1 overflow-y-auto pr-1 space-y-2 custom-scrollbar"></div>
       </div>
     </div>
 
-    <!-- 3. 影片庫分頁 -->
+    <!-- 3. 影片庫分頁 (★★全面改為列表模式★★) -->
     <div id="view-library" class="view-container view-hidden overflow-y-auto p-3 md:p-6 flex flex-col items-center">
       <div class="max-w-5xl w-full h-full flex flex-col">
-        <h2 class="text-xl md:text-2xl font-bold mb-4 md:mb-6 flex items-center gap-2"><i data-lucide="search" class="text-green-500 w-6 h-6"></i> 總影片庫管理</h2>
+        <h2 class="text-xl md:text-2xl font-bold mb-4 md:mb-6 flex items-center gap-2"><i data-lucide="search" class="w-6 h-6 text-green-500"></i> 總影片庫管理</h2>
         
         <div class="bg-gray-900 rounded-xl border border-gray-800 p-4 md:p-6 mb-4 md:mb-6 shadow-lg shrink-0">
-          <h3 class="text-sm md:text-lg font-medium mb-3 flex items-center gap-2 text-gray-200"><i data-lucide="link" class="w-4 h-4 md:w-5 md:h-5"></i> 手動加入 YouTube 影片</h3>
+          <h3 class="text-sm md:text-lg font-medium mb-3 flex items-center gap-2 text-gray-200"><i data-lucide="link" class="w-5 h-5"></i> 手動加入 YouTube 影片</h3>
           <div class="flex flex-col sm:flex-row gap-2 md:gap-3">
             <input type="text" id="manual-url" placeholder="貼上 YouTube 網址..." class="flex-1 bg-gray-950 border border-gray-700 text-gray-100 rounded-lg px-3 py-2 md:px-4 md:py-3 focus:outline-none focus:border-green-500 transition font-mono text-xs md:text-sm" onkeydown="if(event.key === 'Enter') addManualVideo()">
             <button id="btn-add-manual" onclick="addManualVideo()" class="bg-green-600 hover:bg-green-500 disabled:bg-gray-700 text-white px-4 md:px-6 py-2 md:py-3 rounded-lg transition font-medium whitespace-nowrap flex justify-center items-center gap-2 shadow-lg text-sm md:text-base">
-              <i data-lucide="plus" class="icon-md" id="add-manual-icon"></i> <span id="add-manual-text">加入</span>
+              <i data-lucide="plus" class="w-5 h-5" id="add-manual-icon"></i> <span id="add-manual-text">加入</span>
             </button>
           </div>
         </div>
@@ -210,14 +145,16 @@
                  <h3 class="text-sm md:text-lg font-medium text-gray-200">已儲存影片 (<span id="library-count">0</span>)</h3>
                  <!-- 清空分類按鈕 -->
                  <button onclick="clearCurrentCategory()" class="text-xs text-red-400 hover:text-white hover:bg-red-600 transition flex items-center gap-1 bg-red-900/30 px-2 py-1 rounded border border-red-800/50 shadow-sm" title="一鍵清空目前分類的影片">
-                   <i data-lucide="trash-2" class="icon-sm"></i> <span>清空此分類</span>
+                   <i data-lucide="trash-2" class="w-4 h-4"></i> <span>清空此分類</span>
                  </button>
                </div>
                <span class="text-[10px] md:text-xs text-gray-500 hidden sm:inline">資料儲存在您的瀏覽器中</span>
            </div>
            
            <div id="library-tabs" class="flex gap-2 mb-4 overflow-x-auto pb-2 custom-scrollbar shrink-0"></div>
-           <div id="library-grid" class="flex-1 overflow-y-auto custom-scrollbar grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 pb-10 content-start"></div>
+           
+           <!-- ★ 這裡將原本的 grid 改為 space-y-2 的垂直列表容器 ★ -->
+           <div id="library-grid" class="flex-1 overflow-y-auto pr-1 space-y-2 custom-scrollbar pb-10"></div>
         </div>
       </div>
     </div>
@@ -225,49 +162,52 @@
     <!-- 4. 設定與同步分頁 -->
     <div id="view-settings" class="view-container view-hidden overflow-y-auto p-4 md:p-6 flex flex-col items-center">
       <div class="max-w-4xl w-full">
-        <h2 class="text-xl md:text-2xl font-bold mb-6 flex items-center gap-2"><i data-lucide="settings" class="text-gray-400 w-6 h-6"></i> 設定與同步</h2>
+        <h2 class="text-xl md:text-2xl font-bold mb-6 flex items-center gap-2"><i data-lucide="settings" class="w-6 h-6 text-gray-400"></i> 設定與同步</h2>
         
         <div class="bg-gray-900 rounded-xl border border-gray-800 p-4 md:p-6 mb-6 shadow-lg">
-          <h3 class="text-base md:text-lg font-bold mb-2 flex items-center gap-2 text-white"><i data-lucide="youtube" class="text-red-500 w-5 h-5"></i> 自動同步 @famidoc</h3>
+          <h3 class="text-base md:text-lg font-bold mb-2 flex items-center gap-2 text-white"><i data-lucide="youtube" class="w-5 h-5 text-red-500"></i> 自動同步頻道影片</h3>
           <p class="text-gray-400 text-xs md:text-sm mb-4">若要自動抓取頻道影片，請提供 API Key。密鑰安全儲存於本地端。</p>
           
           <div class="flex flex-col gap-3">
             <div>
               <input type="password" id="api-key-input" oninput="saveSettings()" placeholder="輸入 API Key: AIzaSy..." class="w-full bg-gray-950 border border-gray-700 text-gray-100 rounded-lg px-4 py-2 md:py-3 focus:outline-none focus:border-red-500 transition font-mono text-sm">
             </div>
-            <button id="btn-sync" onclick="syncChannel()" class="bg-red-600 hover:bg-red-500 text-white px-4 md:px-6 py-2 md:py-3 rounded-lg transition font-medium flex items-center justify-center gap-2 w-full sm:w-auto shadow-lg text-sm md:text-base">
-              <i data-lucide="refresh-cw" class="icon-md" id="sync-icon"></i> <span id="sync-text">立即同步頻道影片</span>
+            <div>
+              <input type="text" id="sync-channel-input" placeholder="目標頻道代號 (例如: @famidoc)" class="w-full bg-gray-950 border border-gray-700 text-gray-100 rounded-lg px-4 py-2 md:py-3 focus:outline-none focus:border-blue-500 transition font-mono text-sm">
+            </div>
+            <button id="btn-sync" onclick="syncChannel()" class="bg-red-600 hover:bg-red-500 text-white px-4 md:px-6 py-2 md:py-3 rounded-lg transition font-medium flex items-center justify-center gap-2 w-full sm:w-auto shadow-lg text-sm md:text-base mt-2">
+              <i data-lucide="refresh-cw" class="w-5 h-5" id="sync-icon"></i> <span id="sync-text">立即同步頻道影片</span>
             </button>
           </div>
         </div>
 
         <div class="bg-gray-900 rounded-xl border border-gray-800 p-4 md:p-6 shadow-lg">
-          <h3 class="text-base md:text-lg font-bold mb-2 flex items-center gap-2 text-white"><i data-lucide="save" class="text-blue-400 w-5 h-5"></i> 備份與還原</h3>
+          <h3 class="text-base md:text-lg font-bold mb-2 flex items-center gap-2 text-white"><i data-lucide="save" class="w-5 h-5 text-blue-400"></i> 備份與還原</h3>
           <p class="text-gray-400 text-xs md:text-sm mb-4">建議將影片庫匯出為 JSON 檔案妥善保存。</p>
           
           <div class="flex flex-col sm:flex-row gap-3">
             <button onclick="exportJSON()" class="bg-gray-800 hover:bg-gray-700 text-gray-200 px-4 md:px-6 py-2 md:py-3 rounded-lg transition font-medium flex items-center justify-center gap-2 border border-gray-700 text-sm md:text-base">
-              <i data-lucide="download" class="icon-md"></i> 匯出 JSON
+              <i data-lucide="download" class="w-5 h-5"></i> 匯出 JSON
             </button>
             <label class="bg-gray-800 hover:bg-gray-700 text-gray-200 px-4 md:px-6 py-2 md:py-3 rounded-lg transition font-medium flex items-center justify-center gap-2 cursor-pointer border border-gray-700 text-sm md:text-base">
-              <i data-lucide="upload" class="icon-md"></i> 匯入 JSON
+              <i data-lucide="upload" class="w-5 h-5"></i> 匯入 JSON
               <input type="file" id="import-json" accept=".json" onchange="importJSON(event)" class="hidden" />
             </label>
           </div>
         </div>
         
-        <!-- App Footer -->
+        <!-- App Footer (手機版主要顯示於此) -->
         <div class="mt-8 mb-4 text-center text-xs text-gray-600">
-          @2026 by Famidoc Chang & Gemini 3.1 pro
+          @2026 by Famidoc Chang & Gemini
         </div>
-
       </div>
     </div>
+
   </div>
 
   <!-- ================= JavaScript 核心邏輯 ================= -->
   <script>
-    // --- 0. Service Worker 背景緩存清理 ---
+    // --- 0. 開發者救援指令：強制清除 PWA 舊快取 ---
     if ('serviceWorker' in navigator) {
       try {
         navigator.serviceWorker.getRegistrations()
@@ -275,8 +215,13 @@
             for(let registration of registrations) {
               registration.unregister().catch(err => console.warn('取消註冊失敗:', err));
             }
-          }).catch(err => {});
-      } catch (error) {}
+          })
+          .catch(function(error) {
+            console.warn('無法取得 ServiceWorker 註冊狀態 (環境可能受限):', error);
+          });
+      } catch (error) {
+        console.warn('ServiceWorker 存取被拒:', error);
+      }
     }
 
     // --- 1. 狀態與資料清洗 ---
@@ -320,7 +265,12 @@
 
     function escapeHTML(str) {
       if (!str) return '';
-      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     }
 
     // --- 2. YouTube Iframe API 初始化與控制 ---
@@ -411,18 +361,15 @@
       updatePlayModeUI();
     }
 
-    // --- 4. 畫面渲染與 UI 更新 (100% 無 inline style 版) ---
+    // --- 4. 畫面渲染與 UI 更新 ---
     document.addEventListener("DOMContentLoaded", () => {
-      // 安全檢查：確保元素存在再賦值，防止載入時引發 Cannot set properties of null 錯誤
       const apiKeyInput = document.getElementById('api-key-input');
       const syncChannelInput = document.getElementById('sync-channel-input');
       
       if (apiKeyInput && state.settings) {
         apiKeyInput.value = state.settings.apiKey || '';
       }
-      
       if (syncChannelInput) {
-        // 設定預設頻道代號
         syncChannelInput.value = '@famidoc';
       }
 
@@ -447,10 +394,12 @@
 
       if (currentVideo && currentVideo.id) {
         infoContainer.innerHTML = `
-          <img src="${escapeHTML(currentVideo.thumbnail)}" class="fc-np-img shadow" />
-          <div class="fc-np-box">
-            <h3 class="fc-np-title" title="${escapeHTML(currentVideo.title)}">${escapeHTML(currentVideo.title)}</h3>
-            <p class="fc-np-sub">目前播放: ${state.currentIndex + 1} / ${state.playlist.length} | ${escapeHTML(currentVideo.channelName)}</p>
+          <div class="relative shrink-0 bg-black rounded shadow overflow-hidden w-12 h-8 md:w-16 md:h-12 hidden sm:block">
+             <img src="${escapeHTML(currentVideo.thumbnail)}" class="absolute inset-0 w-full h-full object-cover" />
+          </div>
+          <div class="flex-1 min-w-0 text-center md:text-left">
+            <h3 class="font-semibold text-gray-100 truncate text-sm md:text-base" title="${escapeHTML(currentVideo.title)}">${escapeHTML(currentVideo.title)}</h3>
+            <p class="text-[10px] md:text-xs text-gray-400 md:mt-1 truncate">目前播放: ${state.currentIndex + 1} / ${state.playlist.length} | ${escapeHTML(currentVideo.channelName)}</p>
           </div>
         `;
         noVideoMsg.classList.add('hidden');
@@ -467,15 +416,16 @@
     function updatePlayModeUI() {
       const btn = document.getElementById('btn-playmode');
       if (state.playMode === 'sequential') {
-        btn.innerHTML = `<i data-lucide="arrow-right" class="icon-sm"></i> <span class="hidden md:inline">循序播放</span><span class="md:hidden">循序</span>`;
+        btn.innerHTML = `<i data-lucide="arrow-right" class="w-4 h-4"></i> <span class="hidden md:inline">循序播放</span><span class="md:hidden">循序</span>`;
       } else if (state.playMode === 'repeat-single') {
-        btn.innerHTML = `<i data-lucide="repeat-1" class="icon-sm"></i> <span class="hidden md:inline">單曲循環</span><span class="md:hidden">單曲</span>`;
+        btn.innerHTML = `<i data-lucide="repeat-1" class="w-4 h-4"></i> <span class="hidden md:inline">單曲循環</span><span class="md:hidden">單曲</span>`;
       } else {
-        btn.innerHTML = `<i data-lucide="shuffle" class="icon-sm"></i> <span class="hidden md:inline">隨機播放</span><span class="md:hidden">隨機</span>`;
+        btn.innerHTML = `<i data-lucide="shuffle" class="w-4 h-4"></i> <span class="hidden md:inline">隨機播放</span><span class="md:hidden">隨機</span>`;
       }
       lucide.createIcons();
     }
 
+    // ★★★ 終極防護：全面改為列表排版 (List View)，使用絕對固定尺寸縮圖，100% 免疫塌陷 ★★★
     function renderLibrary() {
       document.getElementById('library-count').innerText = state.masterList.length;
       const grid = document.getElementById('library-grid');
@@ -488,7 +438,7 @@
         let tabsHtml = '';
         channels.forEach(ch => {
             const isActive = ch === activeLibraryTab;
-            const btnClass = isActive ? 'fc-tab-active' : 'fc-tab-inactive';
+            const btnClass = isActive ? 'px-4 py-1.5 rounded-full text-xs md:text-sm font-medium whitespace-nowrap bg-blue-600 text-white shadow-md transition-colors' : 'px-4 py-1.5 rounded-full text-xs md:text-sm font-medium whitespace-nowrap bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white transition-colors';
             tabsHtml += `<button class="${btnClass}" onclick="activeLibraryTab='${ch}'; renderLibrary();">${ch}</button>`;
         });
         tabsContainer.innerHTML = tabsHtml;
@@ -496,8 +446,8 @@
 
       if (state.masterList.length === 0) {
         grid.innerHTML = `
-          <div class="fc-empty-state">
-             <i data-lucide="search" class="icon-xl mb-4 opacity-20"></i>
+          <div class="py-10 md:py-20 flex flex-col items-center justify-center text-gray-500 px-4 text-center">
+             <i data-lucide="search" class="w-12 h-12 mb-4 opacity-20"></i>
              <p class="text-sm md:text-base">影片庫目前是空的。請在上方貼上網址，或是前往「設定與同步」匯入資料。</p>
           </div>`;
         lucide.createIcons();
@@ -507,29 +457,36 @@
       const displayList = activeLibraryTab === '全部' ? state.masterList : state.masterList.filter(v => v.channelName === activeLibraryTab);
 
       if (displayList.length === 0) {
-         grid.innerHTML = `<div class="fc-empty-state"><p class="text-sm md:text-base">此分類目前沒有影片。</p></div>`;
+         grid.innerHTML = `<div class="py-10 flex justify-center text-gray-500"><p class="text-sm md:text-base">此分類目前沒有影片。</p></div>`;
          return;
       }
 
       let html = '';
       displayList.forEach(video => {
+        // 使用與搜尋清單完全相同的排版邏輯，搭配絕對尺寸的固定大小圖片 (w-24 h-[54px] 到 md:w-32 md:h-[72px])
         html += `
-          <div class="fc-grid-card group">
-             <div class="fc-thumb-container">
-                <img src="${escapeHTML(video.thumbnail)}" class="fc-thumb" onerror="this.src='https://img.youtube.com/vi/${escapeHTML(video.id)}/hqdefault.jpg'" />
-                <div class="fc-overlay">
-                   <button onclick="addObjToPlaylist('${escapeHTML(video.id)}')" class="fc-btn-circle fc-btn-blue" title="加入播放清單">
-                     <i data-lucide="plus" class="icon-md"></i>
-                   </button>
-                   <button onclick="deleteFromMaster('${escapeHTML(video.id)}')" class="fc-btn-circle fc-btn-red" title="刪除">
-                     <i data-lucide="trash-2" class="icon-md"></i>
-                   </button>
-                </div>
-             </div>
-             <div class="fc-card-info">
-                <h4 class="fc-card-title" title="${escapeHTML(video.title)}">${escapeHTML(video.title)}</h4>
-                <span class="fc-tag">${escapeHTML(video.channelName)}</span>
-             </div>
+          <div class="flex gap-2 md:gap-3 bg-gray-800/60 p-2 rounded-lg hover:bg-gray-750 transition-colors group items-center border border-transparent hover:border-gray-700">
+            
+            <!-- 絕對固定尺寸的縮圖，絕對不會被壓扁 -->
+            <div class="relative shrink-0 bg-black rounded shadow overflow-hidden w-24 h-[54px] md:w-32 md:h-[72px]">
+                <img src="${escapeHTML(video.thumbnail)}" class="absolute inset-0 w-full h-full object-cover" onerror="this.src='https://img.youtube.com/vi/${escapeHTML(video.id)}/hqdefault.jpg'" />
+            </div>
+            
+            <!-- 標題與標籤區域 -->
+            <div class="flex-1 min-w-0">
+              <h4 class="font-medium text-xs md:text-sm text-gray-200 line-clamp-2" title="${escapeHTML(video.title)}">${escapeHTML(video.title)}</h4>
+              <span class="inline-block bg-gray-700 text-gray-400 text-[10px] px-2 py-0.5 rounded mt-1 md:mt-2">${escapeHTML(video.channelName)}</span>
+            </div>
+            
+            <!-- 按鈕操作區 (加入清單 / 刪除) -->
+            <div class="flex gap-1 md:gap-2 shrink-0">
+              <button onclick="addObjToPlaylist('${escapeHTML(video.id)}')" class="p-2 text-white bg-blue-600 md:bg-gray-800 md:text-gray-400 hover:text-white md:hover:bg-blue-600 rounded-full transition-all shadow-md md:shadow-none group-hover:bg-blue-600 group-hover:text-white" title="加入播放清單">
+                <i data-lucide="plus" class="w-4 h-4 md:w-5 md:h-5"></i>
+              </button>
+              <button onclick="deleteFromMaster('${escapeHTML(video.id)}')" class="p-2 text-white bg-red-600 md:bg-gray-800 md:text-gray-400 hover:text-white md:hover:bg-red-600 rounded-full transition-all shadow-md md:shadow-none group-hover:bg-red-600 group-hover:text-white" title="刪除影片">
+                <i data-lucide="trash-2" class="w-4 h-4 md:w-5 md:h-5"></i>
+              </button>
+            </div>
           </div>
         `;
       });
@@ -540,6 +497,7 @@
     function renderSearch() {
       const searchInput = document.getElementById('search-input');
       if (!searchInput) return;
+      
       const query = searchInput.value.toLowerCase();
       const container = document.getElementById('search-results');
       if (!container) return;
@@ -547,23 +505,23 @@
       const filtered = state.masterList.filter(v => v.title.toLowerCase().includes(query));
       
       if (filtered.length === 0) {
-        container.innerHTML = `<p class="fc-empty-state" style="padding-top:2.5rem; padding-bottom:2.5rem; font-size:0.875rem;">找不到符合關鍵字的影片</p>`;
+        container.innerHTML = `<p class="text-gray-500 text-center py-10 text-sm">找不到符合關鍵字的影片</p>`;
         return;
       }
 
       let html = '';
       filtered.forEach(video => {
         html += `
-          <div class="fc-list-item">
-            <div class="fc-list-thumb-lg">
-                <img src="${escapeHTML(video.thumbnail)}" class="fc-thumb" />
+          <div class="flex gap-2 md:gap-3 bg-gray-800/60 p-2 rounded-lg hover:bg-gray-750 transition-colors group items-center border border-transparent hover:border-gray-700">
+            <div class="relative shrink-0 bg-black rounded shadow overflow-hidden w-24 h-[54px]">
+                <img src="${escapeHTML(video.thumbnail)}" class="absolute inset-0 w-full h-full object-cover" onerror="this.src='https://img.youtube.com/vi/${escapeHTML(video.id)}/hqdefault.jpg'" />
             </div>
-            <div class="fc-list-info">
-              <h4 class="fc-list-title">${escapeHTML(video.title)}</h4>
-              <span class="fc-list-tag">${escapeHTML(video.channelName)}</span>
+            <div class="flex-1 min-w-0">
+              <h4 class="font-medium text-xs md:text-sm text-gray-200 line-clamp-2">${escapeHTML(video.title)}</h4>
+              <span class="block text-[10px] text-gray-500 mt-1">${escapeHTML(video.channelName)}</span>
             </div>
-            <button onclick="addObjToPlaylist('${escapeHTML(video.id)}')" class="fc-btn-circle fc-btn-blue fc-btn-sm" title="加入清單">
-              <i data-lucide="plus" class="icon-md"></i>
+            <button onclick="addObjToPlaylist('${escapeHTML(video.id)}')" class="p-2 text-white bg-blue-600 md:bg-gray-800 md:text-gray-400 hover:text-white md:hover:bg-blue-600 rounded-full transition-all shadow-md md:shadow-none shrink-0 group-hover:bg-blue-600 group-hover:text-white" title="加入播放清單">
+              <i data-lucide="plus" class="w-4 h-4 md:w-5 md:h-5"></i>
             </button>
           </div>
         `;
@@ -580,8 +538,8 @@
 
       if (state.playlist.length === 0) {
         container.innerHTML = `
-          <div class="fc-empty-state" style="height: 100%;">
-             <i data-lucide="list-video" class="icon-xl mb-4 opacity-20"></i>
+          <div class="flex flex-col items-center justify-center h-full text-gray-500 space-y-4 p-4 text-center">
+             <i data-lucide="list-video" class="w-12 h-12 opacity-20"></i>
              <p class="text-sm">播放清單空空如也，從左側加入影片吧！</p>
           </div>
         `;
@@ -592,23 +550,26 @@
       let html = '';
       state.playlist.forEach((video, idx) => {
         const isActive = idx === state.currentIndex;
-        const activeClass = isActive ? 'active' : '';
+        const activeClassBg = isActive ? 'bg-gray-800' : 'bg-gray-800/40 hover:bg-gray-800';
+        const activeClassBorder = isActive ? 'border-red-500/50 shadow-[inset_4px_0_0_rgba(239,68,68,1)]' : 'border-transparent';
+        const activeClassText = isActive ? 'text-white' : 'text-gray-300';
+        const activeClassPlayBtn = isActive ? 'text-white bg-red-600/80' : 'text-gray-400 bg-transparent';
         
         html += `
-          <div class="fc-list-item ${activeClass}">
-            <span class="fc-idx">${idx + 1}</span>
-            <div class="fc-list-thumb-sm">
-                <img src="${escapeHTML(video.thumbnail)}" class="fc-thumb" />
+          <div class="flex gap-2 md:gap-3 p-2 rounded-lg transition-colors items-center border ${activeClassBg} ${activeClassBorder} group">
+            <span class="text-gray-500 text-xs w-4 md:w-5 text-center font-mono shrink-0">${idx + 1}</span>
+            <div class="relative shrink-0 bg-black rounded shadow overflow-hidden w-16 h-9">
+                <img src="${escapeHTML(video.thumbnail)}" class="absolute inset-0 w-full h-full object-cover" onerror="this.src='https://img.youtube.com/vi/${escapeHTML(video.id)}/hqdefault.jpg'" />
             </div>
-            <div class="fc-list-info">
-              <h4 class="fc-list-title ${activeClass}">${escapeHTML(video.title)}</h4>
+            <div class="flex-1 min-w-0">
+              <h4 class="font-medium text-xs md:text-sm line-clamp-2 ${activeClassText}">${escapeHTML(video.title)}</h4>
             </div>
-            <div class="fc-list-actions">
-              <button onclick="playVideoByIndex(${idx}); switchTab('player');" class="fc-icon-btn play ${activeClass}" title="立即播放">
-                <i data-lucide="play" class="icon-sm"></i>
+            <div class="flex items-center gap-1 opacity-100 md:opacity-50 group-hover:opacity-100 transition-opacity shrink-0">
+              <button onclick="playVideoByIndex(${idx}); switchTab('player');" class="p-1.5 ${activeClassPlayBtn} md:bg-transparent hover:text-white md:hover:bg-red-600 rounded transition-colors shadow-md md:shadow-none" title="立即播放">
+                <i data-lucide="play" class="w-4 h-4"></i>
               </button>
-              <button onclick="removeFromPlaylist(${idx})" class="fc-icon-btn del" title="移除">
-                <i data-lucide="x" class="icon-sm"></i>
+              <button onclick="removeFromPlaylist(${idx})" class="p-1.5 text-white bg-gray-700 md:bg-transparent md:text-gray-400 hover:text-red-400 md:hover:bg-gray-700 md:hover:text-white rounded transition-colors shadow-md md:shadow-none" title="移除">
+                <i data-lucide="x" class="w-4 h-4"></i>
               </button>
             </div>
           </div>
@@ -688,7 +649,7 @@
       if (state.masterList.length === 0) return;
       
       const msg = activeLibraryTab === '全部' 
-        ? '⚠️ 警告：確定要清空【全部】的影片嗎？這將會刪除您影片庫中的所有資料庫！' 
+        ? '⚠️ 警告：確定要清空【全部】的影片嗎？這將會刪除您影片庫中的所有資料！' 
         : `確定要清空分類【${activeLibraryTab}】的所有影片嗎？`;
         
       if (confirm(msg)) {
@@ -850,7 +811,7 @@
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state.masterList));
       const node = document.createElement('a');
       node.setAttribute("href", dataStr);
-      node.setAttribute("download", "my_yt_player_backup.json");
+      node.setAttribute("download", "famidoc_videos_backup.json");
       document.body.appendChild(node);
       node.click();
       node.remove();
@@ -867,10 +828,7 @@
             const map = new Map();
             state.masterList.forEach(v => map.set(v.id, v));
             imported.forEach(v => {
-              if (v.id && v.title) {
-                 v.channelName = v.channelName || '特選影片';
-                 map.set(v.id, v);
-              }
+              if (v.id && v.title) map.set(v.id, v);
             });
             state.masterList = Array.from(map.values());
             saveState('masterList', state.masterList);
@@ -913,15 +871,6 @@
     }
 
     function checkPlayerVisibility() {}
-
-    // --- 9. PWA 註冊 ---
-    if ('serviceWorker' in navigator && window.isSecureContext) {
-      window.addEventListener('load', () => {
-        try {
-          navigator.serviceWorker.register('./sw.js').catch(err => {});
-        } catch(e) {}
-      });
-    }
 
   </script>
 </body>
