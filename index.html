@@ -1,5 +1,9 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+<head>
+  <!-- 消失的靈魂標籤補回來啦！ -->
+  <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -31,13 +35,98 @@
     /* 確保動態建立的卡片擁有絕對防塌陷的高度 */
     .safe-card-wrapper { min-height: 160px; display: flex; flex-direction: column; height: 100%; }
     .safe-img-wrapper { aspect-ratio: 16 / 9; background-color: #000; width: 100%; position: relative; flex-shrink: 0; }
+    
+    /* 1. 總影片庫的卡片樣式 */
+    .fc-card {
+      background-color: #030712;
+      border: 1px solid #1f2937;
+      border-radius: 0.5rem;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: border-color 0.2s;
+    }
+    .fc-card:hover { border-color: #4b5563; }
+    
+    .fc-thumb-box {
+      position: relative;
+      width: 100%;
+      padding-bottom: 56.25%; /* 完美的 16:9 高度鎖定 */
+      background-color: #000;
+      flex-shrink: 0;
+    }
+    .fc-thumb-img {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+    }
+    .fc-overlay {
+      position: absolute;
+      inset: 0;
+      background-color: rgba(0,0,0,0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    .fc-card:hover .fc-overlay, .fc-thumb-box:hover .fc-overlay {
+      opacity: 1;
+    }
+    .fc-btn {
+      color: #fff; padding: 8px; border-radius: 9999px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .fc-btn-blue { background-color: #2563eb; }
+    .fc-btn-blue:hover { background-color: #1d4ed8; }
+    .fc-btn-red { background-color: #dc2626; }
+    .fc-btn-red:hover { background-color: #b91c1c; }
+    
+    .fc-info {
+      padding: 12px; flex: 1; display: block; min-height: 60px;
+    }
+    .fc-title {
+      color: #e5e7eb; font-size: 14px; font-weight: 500; line-height: 1.4; margin: 0;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+
+    /* 2. 列表清單的樣式 (搜尋結果、播放清單) */
+    .fc-list-item {
+      display: flex; gap: 12px; padding: 8px; border-radius: 0.5rem; background-color: rgba(31,41,55,0.6); align-items: center; margin-bottom: 8px; border: 1px solid transparent; transition: background-color 0.2s;
+    }
+    .fc-list-item:hover { background-color: rgba(55,65,81,0.6); }
+    .fc-list-item.active { background-color: #1f2937; border-color: transparent; border-left: 4px solid #ef4444; border-radius: 0 0.5rem 0.5rem 0; }
+    .fc-list-idx { color: #6b7280; font-size: 12px; width: 24px; text-align: center; flex-shrink: 0; font-family: monospace; }
+    .fc-list-thumb { width: 96px; height: 54px; flex-shrink: 0; background-color: #000; border-radius: 4px; overflow: hidden; position: relative; }
+    .fc-list-thumb-small { width: 64px; height: 36px; flex-shrink: 0; background-color: #000; border-radius: 4px; overflow: hidden; position: relative; }
+    .fc-list-info { flex: 1; min-width: 0; }
+    .fc-list-title { font-weight: 500; font-size: 13px; color: #d1d5db; margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .fc-list-title.active { color: #fff; }
+    .fc-list-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+    .fc-icon-btn { padding: 6px; color: #9ca3af; background: transparent; border-radius: 4px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+    .fc-icon-btn-play:hover { color: #fff; background-color: #dc2626; }
+    .fc-icon-btn-del:hover { color: #fff; background-color: #4b5563; }
+
+    /* 3. 播放器控制列的動態文字樣式 */
+    .fc-now-playing-img { width: 64px; height: 48px; object-fit: cover; border-radius: 4px; flex-shrink: 0; display: none; }
+    @media (min-width: 640px) { .fc-now-playing-img { display: block; } }
+    .fc-now-playing-text-box { flex: 1; min-width: 0; text-align: left; }
+    .fc-now-playing-title { font-weight: 600; color: #f3f4f6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; margin: 0; }
+    .fc-now-playing-sub { font-size: 10px; color: #9ca3af; margin: 2px 0 0 0; }
+
+    /* 4. 空狀態提示的樣式 */
+    .fc-empty-state { grid-column: 1 / -1; padding: 40px 16px; text-align: center; color: #6b7280; display: flex; flex-direction: column; align-items: center; }
+    .fc-empty-icon { width: 48px; height: 48px; margin-bottom: 16px; opacity: 0.2; }
+    .fc-empty-playlist { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 16px; text-align: center; color: #6b7280; gap: 16px; }
+    .fc-empty-search { color: #6b7280; text-align: center; padding: 40px 0; font-size: 14px; margin: 0; }
   </style>
 </head>
 <body class="bg-gray-950 text-gray-100 overflow-hidden font-sans selection:bg-red-500/30 flex flex-col md:flex-row h-[100dvh] w-full">
 
   <!-- ================= 側邊導覽列 ================= -->
   <div class="w-full md:w-64 bg-gray-900 border-t md:border-t-0 md:border-r border-gray-800 flex flex-row md:flex-col z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.5)] md:shadow-2xl shrink-0 h-[68px] md:h-auto order-last md:order-first">
-    <!-- 將 md:block 改為 md:flex flex-col items-center 讓整個區塊置中 -->
+    <!-- 加入 items-center 與 text-center 讓 Logo 與副標題置中 -->
     <div class="hidden md:flex flex-col items-center p-6 pb-8 text-center">
       <h1 class="text-2xl font-black text-white flex items-center gap-2 tracking-tight">
         <i data-lucide="youtube" class="text-red-500 w-8 h-8"></i> My YT Player
@@ -145,7 +234,6 @@
                <h3 class="text-sm md:text-lg font-medium text-gray-200">已儲存影片 (<span id="library-count">0</span>)</h3>
                <span class="text-[10px] md:text-xs text-gray-500">資料儲存在您的瀏覽器中</span>
            </div>
-           <!-- 網格排版容器 -->
            <div id="library-grid" class="flex-1 overflow-y-auto custom-scrollbar grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 pb-10 content-start"></div>
         </div>
       </div>
@@ -228,6 +316,11 @@
       if (key === 'currentIndex') localStorage.setItem('famidoc_idx', value);
       if (key === 'playMode') localStorage.setItem('famidoc_mode', value);
       if (key === 'settings') localStorage.setItem('famidoc_settings', JSON.stringify(value));
+    }
+
+    function escapeHTML(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
     // --- 2. YouTube Iframe API ---
@@ -385,7 +478,6 @@
       lucide.createIcons();
     }
 
-    // ★★★ 完全使用 document.createElement() 取代 innerHTML，阻斷惡意/隱形字元破壞 ★★★
     function renderLibrary() {
       document.getElementById('library-count').innerText = state.masterList.length;
       const grid = document.getElementById('library-grid');
@@ -398,15 +490,12 @@
       }
 
       state.masterList.forEach(video => {
-        // 卡片外框
         const card = createElement('div', 'safe-card-wrapper bg-gray-950 border border-gray-800 rounded-lg overflow-hidden group hover:border-gray-600 transition');
         
-        // 圖片區塊
         const imgBox = createElement('div', 'safe-img-wrapper');
         const img = createElement('img', 'absolute inset-0 w-full h-full object-cover', { src: video.thumbnail });
         img.onerror = function() { this.src = 'https://img.youtube.com/vi/' + video.id + '/hqdefault.jpg'; };
         
-        // 覆蓋層與按鈕
         const overlay = createElement('div', 'absolute inset-0 bg-black/60 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200');
         
         const btnAdd = createElement('button', 'p-2 bg-blue-600 text-white rounded-full hover:bg-blue-500 shadow flex items-center justify-center', { title: '加入播放清單', innerHTML: svgPlus });
@@ -420,7 +509,6 @@
         imgBox.appendChild(img);
         imgBox.appendChild(overlay);
 
-        // 文字區塊 (安全塞入文字)
         const infoBox = createElement('div', 'p-3 flex-1 flex flex-col justify-start', { style: { minHeight: '60px' }});
         const title = createElement('h4', 'text-gray-200 text-sm font-medium line-clamp-2', { textContent: video.title, title: video.title });
         
@@ -701,11 +789,16 @@
           : "w-full flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 px-1 md:px-4 py-2 md:py-3 rounded-lg transition font-medium text-gray-400 hover:bg-gray-800 hover:text-gray-200";
       });
       document.getElementById(`view-${tabId}`).classList.replace('view-hidden', 'view-active');
-      checkPlayerVisibility();
     }
 
-    function checkPlayerVisibility() {}
-
+    // --- 9. PWA 註冊 ---
+    if ('serviceWorker' in navigator && window.isSecureContext) {
+      window.addEventListener('load', () => {
+        try {
+          navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW註冊受限'));
+        } catch(e) {}
+      });
+    }
   </script>
 </body>
 </html>
