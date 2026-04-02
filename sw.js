@@ -1,4 +1,4 @@
-const CACHE_NAME = 'famidoc-player-v6';
+const CACHE_NAME = 'famidoc-player-v7';
 
 // 安裝階段
 self.addEventListener('install', (event) => {
