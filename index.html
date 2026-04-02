@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <!-- 消失的靈魂標籤補回來啦！ -->
   <meta charset="UTF-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -9,7 +8,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>My YT Player</title>
   
-  <!-- PWA & App Icon 設定 -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#030712">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -17,116 +15,13 @@
   <meta name="apple-mobile-web-app-title" content="My YT Player">
   <link rel="apple-touch-icon" href="icon-192.png">
 
-  <!-- 載入 Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- 載入 Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
-  <style>
-    /* 自訂捲軸與基礎動畫 */
-    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: #374151; border-radius: 10px; }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #4B5563; }
-    
-    .view-container { transition: opacity 0.3s ease; position: absolute; inset: 0; width: 100%; height: 100%; }
-    .view-hidden { opacity: 0; pointer-events: none; z-index: -10; }
-    .view-active { opacity: 1; z-index: 10; }
-
-    /* 確保動態建立的卡片擁有絕對防塌陷的高度 */
-    .safe-card-wrapper { min-height: 160px; display: flex; flex-direction: column; height: 100%; }
-    .safe-img-wrapper { aspect-ratio: 16 / 9; background-color: #000; width: 100%; position: relative; flex-shrink: 0; }
-    
-    /* 1. 總影片庫的卡片樣式 */
-    .fc-card {
-      background-color: #030712;
-      border: 1px solid #1f2937;
-      border-radius: 0.5rem;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      transition: border-color 0.2s;
-    }
-    .fc-card:hover { border-color: #4b5563; }
-    
-    .fc-thumb-box {
-      position: relative;
-      width: 100%;
-      padding-bottom: 56.25%; /* 完美的 16:9 高度鎖定 */
-      background-color: #000;
-      flex-shrink: 0;
-    }
-    .fc-thumb-img {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      object-fit: cover;
-    }
-    .fc-overlay {
-      position: absolute;
-      inset: 0;
-      background-color: rgba(0,0,0,0.6);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      opacity: 0;
-      transition: opacity 0.2s ease;
-    }
-    .fc-card:hover .fc-overlay, .fc-thumb-box:hover .fc-overlay {
-      opacity: 1;
-    }
-    .fc-btn {
-      color: #fff; padding: 8px; border-radius: 9999px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
-    }
-    .fc-btn-blue { background-color: #2563eb; }
-    .fc-btn-blue:hover { background-color: #1d4ed8; }
-    .fc-btn-red { background-color: #dc2626; }
-    .fc-btn-red:hover { background-color: #b91c1c; }
-    
-    .fc-info {
-      padding: 12px; flex: 1; display: block; min-height: 60px;
-    }
-    .fc-title {
-      color: #e5e7eb; font-size: 14px; font-weight: 500; line-height: 1.4; margin: 0;
-      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-    }
-
-    /* 2. 列表清單的樣式 (搜尋結果、播放清單) */
-    .fc-list-item {
-      display: flex; gap: 12px; padding: 8px; border-radius: 0.5rem; background-color: rgba(31,41,55,0.6); align-items: center; margin-bottom: 8px; border: 1px solid transparent; transition: background-color 0.2s;
-    }
-    .fc-list-item:hover { background-color: rgba(55,65,81,0.6); }
-    .fc-list-item.active { background-color: #1f2937; border-color: transparent; border-left: 4px solid #ef4444; border-radius: 0 0.5rem 0.5rem 0; }
-    .fc-list-idx { color: #6b7280; font-size: 12px; width: 24px; text-align: center; flex-shrink: 0; font-family: monospace; }
-    .fc-list-thumb { width: 96px; height: 54px; flex-shrink: 0; background-color: #000; border-radius: 4px; overflow: hidden; position: relative; }
-    .fc-list-thumb-small { width: 64px; height: 36px; flex-shrink: 0; background-color: #000; border-radius: 4px; overflow: hidden; position: relative; }
-    .fc-list-info { flex: 1; min-width: 0; }
-    .fc-list-title { font-weight: 500; font-size: 13px; color: #d1d5db; margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-    .fc-list-title.active { color: #fff; }
-    .fc-list-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
-    .fc-icon-btn { padding: 6px; color: #9ca3af; background: transparent; border-radius: 4px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
-    .fc-icon-btn-play:hover { color: #fff; background-color: #dc2626; }
-    .fc-icon-btn-del:hover { color: #fff; background-color: #4b5563; }
-
-    /* 3. 播放器控制列的動態文字樣式 */
-    .fc-now-playing-img { width: 64px; height: 48px; object-fit: cover; border-radius: 4px; flex-shrink: 0; display: none; }
-    @media (min-width: 640px) { .fc-now-playing-img { display: block; } }
-    .fc-now-playing-text-box { flex: 1; min-width: 0; text-align: left; }
-    .fc-now-playing-title { font-weight: 600; color: #f3f4f6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; margin: 0; }
-    .fc-now-playing-sub { font-size: 10px; color: #9ca3af; margin: 2px 0 0 0; }
-
-    /* 4. 空狀態提示的樣式 */
-    .fc-empty-state { grid-column: 1 / -1; padding: 40px 16px; text-align: center; color: #6b7280; display: flex; flex-direction: column; align-items: center; }
-    .fc-empty-icon { width: 48px; height: 48px; margin-bottom: 16px; opacity: 0.2; }
-    .fc-empty-playlist { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 16px; text-align: center; color: #6b7280; gap: 16px; }
-    .fc-empty-search { color: #6b7280; text-align: center; padding: 40px 0; font-size: 14px; margin: 0; }
-  </style>
 </head>
 <body class="bg-gray-950 text-gray-100 overflow-hidden font-sans selection:bg-red-500/30 flex flex-col md:flex-row h-[100dvh] w-full">
 
   <!-- ================= 側邊導覽列 ================= -->
   <div class="w-full md:w-64 bg-gray-900 border-t md:border-t-0 md:border-r border-gray-800 flex flex-row md:flex-col z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.5)] md:shadow-2xl shrink-0 h-[68px] md:h-auto order-last md:order-first">
-    <!-- 加入 items-center 與 text-center 讓 Logo 與副標題置中 -->
     <div class="hidden md:flex flex-col items-center p-6 pb-8 text-center">
       <h1 class="text-2xl font-black text-white flex items-center gap-2 tracking-tight">
         <i data-lucide="youtube" class="text-red-500 w-8 h-8"></i> My YT Player
@@ -217,10 +112,10 @@
     <!-- 3. 影片庫分頁 -->
     <div id="view-library" class="view-container view-hidden overflow-y-auto p-3 md:p-6 flex flex-col items-center">
       <div class="max-w-5xl w-full h-full flex flex-col">
-        <h2 class="text-xl md:text-2xl font-bold mb-4 md:mb-6 flex items-center gap-2"><i data-lucide="search" class="text-green-500 w-6 h-6"></i> 總影片庫管理</h2>
+        <h2 class="text-xl md:text-2xl font-bold mb-4 md:mb-6 flex items-center gap-2"><i data-lucide="video" class="text-green-500 w-6 h-6"></i> 總影片庫管理</h2>
         
         <div class="bg-gray-900 rounded-xl border border-gray-800 p-4 md:p-6 mb-4 md:mb-6 shadow-lg shrink-0">
-          <h3 class="text-sm md:text-lg font-medium mb-3 flex items-center gap-2 text-gray-200"><i data-lucide="link" class="w-4 h-4 md:w-5 md:h-5"></i> 手動加入 YouTube 影片</h3>
+          <h3 class="text-sm md:text-lg font-medium mb-3 flex items-center gap-2 text-gray-200"><i data-lucide="link" class="w-4 h-4 md:w-5 md:h-5"></i> 手動加入單部 YouTube 影片</h3>
           <div class="flex flex-col sm:flex-row gap-2 md:gap-3">
             <input type="text" id="manual-url" placeholder="貼上 YouTube 網址..." class="flex-1 bg-gray-950 border border-gray-700 text-gray-100 rounded-lg px-3 py-2 md:px-4 md:py-3 focus:outline-none focus:border-green-500 transition font-mono text-xs md:text-sm" onkeydown="if(event.key === 'Enter') addManualVideo()">
             <button id="btn-add-manual" onclick="addManualVideo()" class="bg-green-600 hover:bg-green-500 disabled:bg-gray-700 text-white px-4 md:px-6 py-2 md:py-3 rounded-lg transition font-medium whitespace-nowrap flex justify-center items-center gap-2 shadow-lg text-sm md:text-base">
@@ -234,6 +129,7 @@
                <h3 class="text-sm md:text-lg font-medium text-gray-200">已儲存影片 (<span id="library-count">0</span>)</h3>
                <span class="text-[10px] md:text-xs text-gray-500">資料儲存在您的瀏覽器中</span>
            </div>
+           <div id="library-tabs" class="flex gap-2 mb-4 overflow-x-auto pb-2 custom-scrollbar shrink-0"></div>
            <div id="library-grid" class="flex-1 overflow-y-auto custom-scrollbar grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 pb-10 content-start"></div>
         </div>
       </div>
@@ -244,21 +140,26 @@
       <div class="max-w-4xl w-full">
         <h2 class="text-xl md:text-2xl font-bold mb-6 flex items-center gap-2"><i data-lucide="settings" class="text-gray-400 w-6 h-6"></i> 設定與同步</h2>
         <div class="bg-gray-900 rounded-xl border border-gray-800 p-4 md:p-6 mb-6 shadow-lg">
-          <h3 class="text-base md:text-lg font-bold mb-2 flex items-center gap-2 text-white"><i data-lucide="youtube" class="text-red-500 w-5 h-5"></i> 自動同步 @famidoc</h3>
-          <p class="text-gray-400 text-xs md:text-sm mb-4">若要自動抓取頻道影片，請提供 API Key。密鑰安全儲存於本地端。</p>
-          <div class="flex flex-col gap-3">
-            <div>
-              <input type="password" id="api-key-input" oninput="saveSettings()" placeholder="輸入 API Key: AIzaSy..." class="w-full bg-gray-950 border border-gray-700 text-gray-100 rounded-lg px-4 py-2 md:py-3 focus:outline-none focus:border-red-500 transition font-mono text-sm">
+          <h3 class="text-base md:text-lg font-bold mb-2 flex items-center gap-2 text-white"><i data-lucide="youtube" class="text-red-500 w-5 h-5"></i> 頻道影片自動同步</h3>
+          <p class="text-gray-400 text-xs md:text-sm mb-4">您可以輸入任何公開頻道的代號 (例如 @famidoc)，系統會自動抓取該頻道的影片並分類。</p>
+          <div class="flex flex-col md:flex-row gap-3 mb-4">
+            <div class="flex-1">
+              <label class="block text-xs text-gray-400 mb-1 ml-1">YouTube API Key (必填)</label>
+              <input type="password" id="api-key-input" oninput="saveSettings()" placeholder="AIzaSy..." class="w-full bg-gray-950 border border-gray-700 text-gray-100 rounded-lg px-4 py-2 focus:outline-none focus:border-red-500 transition font-mono text-sm">
             </div>
-            <button id="btn-sync" onclick="syncChannel()" class="bg-red-600 hover:bg-red-500 text-white px-4 md:px-6 py-2 md:py-3 rounded-lg transition font-medium flex items-center justify-center gap-2 w-full sm:w-auto shadow-lg text-sm md:text-base">
-              <i data-lucide="refresh-cw" class="w-4 h-4 md:w-5 md:h-5" id="sync-icon"></i> <span id="sync-text">立即同步頻道影片</span>
-            </button>
+            <div class="flex-1">
+              <label class="block text-xs text-gray-400 mb-1 ml-1">目標頻道代號</label>
+              <input type="text" id="sync-channel-input" placeholder="例如: @famidoc" class="w-full bg-gray-950 border border-gray-700 text-gray-100 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500 transition font-mono text-sm">
+            </div>
           </div>
+          <button id="btn-sync" onclick="syncChannel()" class="bg-red-600 hover:bg-red-500 text-white px-4 md:px-6 py-2 md:py-3 rounded-lg transition font-medium flex items-center justify-center gap-2 w-full sm:w-auto shadow-lg text-sm md:text-base">
+            <i data-lucide="refresh-cw" class="w-4 h-4 md:w-5 md:h-5" id="sync-icon"></i> <span id="sync-text">立即同步該頻道</span>
+          </button>
         </div>
 
         <div class="bg-gray-900 rounded-xl border border-gray-800 p-4 md:p-6 shadow-lg">
           <h3 class="text-base md:text-lg font-bold mb-2 flex items-center gap-2 text-white"><i data-lucide="save" class="text-blue-400 w-5 h-5"></i> 備份與還原</h3>
-          <p class="text-gray-400 text-xs md:text-sm mb-4">建議將影片庫匯出為 JSON 檔案妥善保存。</p>
+          <p class="text-gray-400 text-xs md:text-sm mb-4">包含所有多頻道資料及特選影片，一鍵匯出保存。</p>
           <div class="flex flex-col sm:flex-row gap-3">
             <button onclick="exportJSON()" class="bg-gray-800 hover:bg-gray-700 text-gray-200 px-4 md:px-6 py-2 md:py-3 rounded-lg transition font-medium flex items-center justify-center gap-2 border border-gray-700 text-sm md:text-base">
               <i data-lucide="download" class="w-4 h-4 md:w-5 md:h-5"></i> 匯出 JSON
@@ -269,19 +170,77 @@
             </label>
           </div>
         </div>
+        
+        <div class="mt-8 mb-4 text-center text-xs text-gray-600">
+          @2026 by Famidoc Chang & Gemini
+        </div>
       </div>
     </div>
   </div>
 
   <!-- ================= JavaScript 核心邏輯 ================= -->
   <script>
+    // --- 0. 終極防禦裝甲：JS 動態樣式注入 (防止 Canvas 預覽吃掉 CSS) ---
+    (function injectStyles() {
+      if (document.getElementById('fc-core-styles')) return;
+      const styleEl = document.createElement('style');
+      styleEl.id = 'fc-core-styles';
+      styleEl.innerHTML = `
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #374151; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #4B5563; }
+        .view-container { transition: opacity 0.3s ease; position: absolute; inset: 0; width: 100%; height: 100%; }
+        .view-hidden { opacity: 0; pointer-events: none; z-index: -10; }
+        .view-active { opacity: 1; z-index: 10; }
+        .safe-card-wrapper { min-height: 160px; display: flex; flex-direction: column; height: 100%; }
+        .safe-img-wrapper { aspect-ratio: 16 / 9; background-color: #000; width: 100%; position: relative; flex-shrink: 0; }
+        .fc-card { background-color: #030712; border: 1px solid #1f2937; border-radius: 0.5rem; overflow: hidden; display: flex; flex-direction: column; transition: border-color 0.2s; }
+        .fc-card:hover { border-color: #4b5563; }
+        .fc-thumb-box { position: relative; width: 100%; padding-bottom: 56.25%; background-color: #000; flex-shrink: 0; }
+        .fc-thumb-img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
+        .fc-overlay { position: absolute; inset: 0; background-color: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; gap: 12px; opacity: 0; transition: opacity 0.2s ease; }
+        .fc-card:hover .fc-overlay, .fc-thumb-box:hover .fc-overlay { opacity: 1; }
+        .fc-btn { color: #fff; padding: 8px; border-radius: 9999px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .fc-btn-blue { background-color: #2563eb; }
+        .fc-btn-blue:hover { background-color: #1d4ed8; }
+        .fc-btn-red { background-color: #dc2626; }
+        .fc-btn-red:hover { background-color: #b91c1c; }
+        .fc-info { padding: 12px; flex: 1; display: block; min-height: 70px; }
+        .fc-title { color: #e5e7eb; font-size: 14px; font-weight: 500; line-height: 1.4; margin: 0 0 4px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .fc-channel-tag { display: inline-block; background-color: #1f2937; color: #9ca3af; font-size: 10px; padding: 2px 6px; border-radius: 4px; }
+        .fc-list-item { display: flex; gap: 12px; padding: 8px; border-radius: 0.5rem; background-color: rgba(31,41,55,0.6); align-items: center; margin-bottom: 8px; border: 1px solid transparent; transition: background-color 0.2s; }
+        .fc-list-item:hover { background-color: rgba(55,65,81,0.6); }
+        .fc-list-item.active { background-color: #1f2937; border-color: transparent; border-left: 4px solid #ef4444; border-radius: 0 0.5rem 0.5rem 0; }
+        .fc-list-idx { color: #6b7280; font-size: 12px; width: 24px; text-align: center; flex-shrink: 0; font-family: monospace; }
+        .fc-list-thumb { width: 96px; height: 54px; flex-shrink: 0; background-color: #000; border-radius: 4px; overflow: hidden; position: relative; }
+        .fc-list-thumb-small { width: 64px; height: 36px; flex-shrink: 0; background-color: #000; border-radius: 4px; overflow: hidden; position: relative; }
+        .fc-list-info { flex: 1; min-width: 0; }
+        .fc-list-title { font-weight: 500; font-size: 13px; color: #d1d5db; margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .fc-list-title.active { color: #fff; }
+        .fc-list-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+        .fc-icon-btn { padding: 6px; color: #9ca3af; background: transparent; border-radius: 4px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .fc-icon-btn-play:hover { color: #fff; background-color: #dc2626; }
+        .fc-icon-btn-del:hover { color: #fff; background-color: #4b5563; }
+        .fc-now-playing-img { width: 64px; height: 48px; object-fit: cover; border-radius: 4px; flex-shrink: 0; display: none; }
+        @media (min-width: 640px) { .fc-now-playing-img { display: block; } }
+        .fc-now-playing-text-box { flex: 1; min-width: 0; text-align: left; }
+        .fc-now-playing-title { font-weight: 600; color: #f3f4f6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; margin: 0; }
+        .fc-now-playing-sub { font-size: 10px; color: #9ca3af; margin: 2px 0 0 0; }
+        .fc-empty-state { grid-column: 1 / -1; padding: 40px 16px; text-align: center; color: #6b7280; display: flex; flex-direction: column; align-items: center; }
+        .fc-empty-icon { width: 48px; height: 48px; margin-bottom: 16px; opacity: 0.2; }
+        .fc-empty-playlist { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 16px; text-align: center; color: #6b7280; gap: 16px; }
+        .fc-empty-search { color: #6b7280; text-align: center; padding: 40px 0; font-size: 14px; margin: 0; }
+      `;
+      document.head.appendChild(styleEl);
+    })();
+
     // 手繪 SVG 靜態常數
     const svgPlus = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>`;
     const svgTrash = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>`;
     const svgPlay = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>`;
     const svgX = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`;
 
-    // --- 0. Service Worker 清理 ---
     try {
       if ('serviceWorker' in navigator && window.isSecureContext) {
         navigator.serviceWorker.getRegistrations().then(function(registrations) {
@@ -298,7 +257,8 @@
         .map(v => ({
             id: String(v.id).trim(),
             title: v.title ? String(v.title).trim() : '未知影片',
-            thumbnail: v.thumbnail ? String(v.thumbnail).trim() : `https://img.youtube.com/vi/${v.id}/mqdefault.jpg`
+            thumbnail: v.thumbnail ? String(v.thumbnail).trim() : `https://img.youtube.com/vi/${v.id}/mqdefault.jpg`,
+            channelName: v.channelName ? String(v.channelName).trim() : '特選影片'
         }));
     }
 
@@ -309,6 +269,8 @@
       playMode: localStorage.getItem('famidoc_mode') || 'sequential',
       settings: JSON.parse(localStorage.getItem('famidoc_settings')) || { apiKey: '' }
     };
+    
+    let activeLibraryTab = '全部';
 
     function saveState(key, value) {
       if (key === 'masterList') localStorage.setItem('famidoc_master', JSON.stringify(value));
@@ -347,11 +309,9 @@
     }
 
     function onPlayerStateChange(event) {
-      if (event.data === YT.PlayerState.PLAYING) {
-        updatePlayPauseUI(true);
-      } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED || event.data === YT.PlayerState.UNSTARTED) {
-        updatePlayPauseUI(false);
-      }
+      if (event.data === YT.PlayerState.PLAYING) updatePlayPauseUI(true);
+      else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED || event.data === YT.PlayerState.UNSTARTED) updatePlayPauseUI(false);
+      
       if (event.data === YT.PlayerState.ENDED) handleVideoEnd();
     }
 
@@ -390,7 +350,7 @@
       if (isPlayerReady && player && typeof player.getPlayerState === 'function') {
         player.getPlayerState() === YT.PlayerState.PLAYING ? player.pauseVideo() : player.playVideo();
       } else {
-        alert('播放器尚未連線！請在伺服器環境執行。');
+        alert('播放器尚未連線！');
       }
     }
 
@@ -409,9 +369,10 @@
       updatePlayModeUI();
     }
 
-    // --- 4. 畫面渲染與原生 DOM 建立邏輯 (安全防禦核心) ---
+    // --- 4. 畫面渲染 ---
     document.addEventListener("DOMContentLoaded", () => {
       document.getElementById('api-key-input').value = state.settings.apiKey;
+      document.getElementById('sync-channel-input').value = '@famidoc';
       updateAllUI();
       switchTab('player');
     });
@@ -422,21 +383,16 @@
       renderPlaylist();
       updatePlayerUI();
       updatePlayModeUI();
-      lucide.createIcons(); // 如果還有靜態圖示則渲染
+      lucide.createIcons();
     }
 
-    // 輔助函式：安全地建立元素
     function createElement(tag, className, props = {}) {
         const el = document.createElement(tag);
         if (className) el.className = className;
         for (let key in props) {
-            if (key === 'textContent' || key === 'innerHTML' || key === 'title' || key === 'src') {
-                el[key] = props[key];
-            } else if (key === 'style') {
-                for (let styleKey in props.style) el.style[styleKey] = props.style[styleKey];
-            } else {
-                el.setAttribute(key, props[key]);
-            }
+            if (key === 'textContent' || key === 'innerHTML' || key === 'title' || key === 'src') el[key] = props[key];
+            else if (key === 'style') for (let sk in props.style) el.style[sk] = props.style[sk];
+            else el.setAttribute(key, props[key]);
         }
         return el;
     }
@@ -447,24 +403,18 @@
       const noVideoMsg = document.getElementById('no-video-msg');
       const ytPlayerDiv = document.getElementById('yt-player');
       
-      infoContainer.innerHTML = ''; // 清空
-
+      infoContainer.innerHTML = ''; 
       if (currentVideo && currentVideo.id) {
-        const img = createElement('img', 'hidden sm:block shadow object-cover rounded shrink-0', { src: currentVideo.thumbnail, style: { width: '64px', height: '48px' }});
-        const textBox = createElement('div', 'flex-1 min-w-0 text-center md:text-left');
-        const title = createElement('h3', 'font-semibold text-gray-100 truncate text-sm md:text-base', { textContent: currentVideo.title, title: currentVideo.title });
-        const sub = createElement('p', 'text-[10px] md:text-xs text-gray-400 mt-1', { textContent: `目前播放: ${state.currentIndex + 1} / ${state.playlist.length}` });
+        const img = createElement('img', 'fc-now-playing-img shadow', { src: currentVideo.thumbnail });
+        const textBox = createElement('div', 'fc-now-playing-text-box');
+        const title = createElement('h3', 'fc-now-playing-title', { textContent: currentVideo.title, title: currentVideo.title });
+        const sub = createElement('p', 'fc-now-playing-sub', { textContent: `目前播放: ${state.currentIndex + 1} / ${state.playlist.length} | 來源: ${currentVideo.channelName}` });
         
-        textBox.appendChild(title);
-        textBox.appendChild(sub);
-        infoContainer.appendChild(img);
-        infoContainer.appendChild(textBox);
-        
-        noVideoMsg.classList.add('hidden');
-        ytPlayerDiv.style.opacity = '1';
+        textBox.appendChild(title); textBox.appendChild(sub);
+        infoContainer.appendChild(img); infoContainer.appendChild(textBox);
+        noVideoMsg.classList.add('hidden'); ytPlayerDiv.style.opacity = '1';
       } else {
-        noVideoMsg.classList.remove('hidden');
-        ytPlayerDiv.style.opacity = '0';
+        noVideoMsg.classList.remove('hidden'); ytPlayerDiv.style.opacity = '0';
         updatePlayPauseUI(false);
         if (isPlayerReady && player && player.stopVideo) player.stopVideo();
       }
@@ -481,40 +431,54 @@
     function renderLibrary() {
       document.getElementById('library-count').innerText = state.masterList.length;
       const grid = document.getElementById('library-grid');
-      grid.innerHTML = ''; // 清空
+      const tabsContainer = document.getElementById('library-tabs');
+      
+      const channels = ['全部', '特選影片', ...new Set(state.masterList.map(v => v.channelName).filter(c => c !== '特選影片' && c))];
+      
+      tabsContainer.innerHTML = '';
+      if (state.masterList.length > 0) {
+        channels.forEach(ch => {
+            const btn = createElement('button', `px-4 py-1.5 rounded-full text-xs md:text-sm font-medium whitespace-nowrap transition ${ch === activeLibraryTab ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white'}`, { textContent: ch });
+            btn.onclick = () => { activeLibraryTab = ch; renderLibrary(); };
+            tabsContainer.appendChild(btn);
+        });
+      }
 
+      grid.innerHTML = ''; 
       if (state.masterList.length === 0) {
-        grid.innerHTML = `<div class="col-span-full py-10 flex flex-col items-center justify-center text-gray-500"><i data-lucide="search" class="w-12 h-12 mb-4 opacity-20"></i><p>影片庫目前是空的。請在上方貼上網址，或是前往「設定與同步」匯入資料。</p></div>`;
+        grid.innerHTML = `<div class="fc-empty-state"><i data-lucide="search" class="fc-empty-icon"></i><p class="text-sm md:text-base">影片庫目前是空的。請在上方貼上網址，或是前往「設定與同步」匯入資料。</p></div>`;
         lucide.createIcons();
         return;
       }
 
-      state.masterList.forEach(video => {
-        const card = createElement('div', 'safe-card-wrapper bg-gray-950 border border-gray-800 rounded-lg overflow-hidden group hover:border-gray-600 transition');
-        
-        const imgBox = createElement('div', 'safe-img-wrapper');
-        const img = createElement('img', 'absolute inset-0 w-full h-full object-cover', { src: video.thumbnail });
+      const displayList = activeLibraryTab === '全部' ? state.masterList : state.masterList.filter(v => v.channelName === activeLibraryTab);
+
+      if (displayList.length === 0) {
+         grid.innerHTML = `<div class="fc-empty-state"><p class="text-sm md:text-base">此分類目前沒有影片。</p></div>`;
+         return;
+      }
+
+      displayList.forEach(video => {
+        const card = createElement('div', 'fc-card');
+        const imgBox = createElement('div', 'fc-thumb-box');
+        const img = createElement('img', 'fc-thumb-img', { src: video.thumbnail });
         img.onerror = function() { this.src = 'https://img.youtube.com/vi/' + video.id + '/hqdefault.jpg'; };
         
-        const overlay = createElement('div', 'absolute inset-0 bg-black/60 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200');
-        
-        const btnAdd = createElement('button', 'p-2 bg-blue-600 text-white rounded-full hover:bg-blue-500 shadow flex items-center justify-center', { title: '加入播放清單', innerHTML: svgPlus });
+        const overlay = createElement('div', 'fc-overlay');
+        const btnAdd = createElement('button', 'fc-btn fc-btn-blue', { title: '加入播放清單', innerHTML: svgPlus });
         btnAdd.onclick = () => addObjToPlaylist(video.id);
-        
-        const btnDel = createElement('button', 'p-2 bg-red-600 text-white rounded-full hover:bg-red-500 shadow flex items-center justify-center', { title: '刪除', innerHTML: svgTrash });
+        const btnDel = createElement('button', 'fc-btn fc-btn-red', { title: '刪除', innerHTML: svgTrash });
         btnDel.onclick = () => deleteFromMaster(video.id);
         
-        overlay.appendChild(btnAdd);
-        overlay.appendChild(btnDel);
-        imgBox.appendChild(img);
-        imgBox.appendChild(overlay);
+        overlay.appendChild(btnAdd); overlay.appendChild(btnDel);
+        imgBox.appendChild(img); imgBox.appendChild(overlay);
 
-        const infoBox = createElement('div', 'p-3 flex-1 flex flex-col justify-start', { style: { minHeight: '60px' }});
-        const title = createElement('h4', 'text-gray-200 text-sm font-medium line-clamp-2', { textContent: video.title, title: video.title });
+        const infoBox = createElement('div', 'fc-info');
+        const title = createElement('h4', 'fc-title', { textContent: video.title, title: video.title });
+        const tag = createElement('span', 'fc-channel-tag', { textContent: video.channelName });
         
-        infoBox.appendChild(title);
-        card.appendChild(imgBox);
-        card.appendChild(infoBox);
+        infoBox.appendChild(title); infoBox.appendChild(tag);
+        card.appendChild(imgBox); card.appendChild(infoBox);
         grid.appendChild(card);
       });
     }
@@ -523,32 +487,29 @@
       const query = document.getElementById('search-input').value.toLowerCase();
       const container = document.getElementById('search-results');
       container.innerHTML = '';
-      
       const filtered = state.masterList.filter(v => v.title.toLowerCase().includes(query));
       
       if (filtered.length === 0) {
-        container.innerHTML = `<p class="text-gray-500 text-center py-10 text-sm">找不到符合關鍵字的影片</p>`;
-        return;
+        container.innerHTML = `<p class="fc-empty-search">找不到符合關鍵字的影片</p>`; return;
       }
 
       filtered.forEach(video => {
-        const item = createElement('div', 'flex gap-3 bg-gray-800/60 p-2 rounded-lg hover:bg-gray-750 transition items-center');
-        
-        const imgBox = createElement('div', 'w-24 h-16 shrink-0 bg-black rounded overflow-hidden relative');
-        const img = createElement('img', 'w-full h-full object-cover absolute inset-0', { src: video.thumbnail });
+        const item = createElement('div', 'fc-list-item');
+        const imgBox = createElement('div', 'fc-list-thumb');
+        const img = createElement('img', 'fc-thumb-img', { src: video.thumbnail });
         img.onerror = function() { this.src = 'https://img.youtube.com/vi/' + video.id + '/hqdefault.jpg'; };
         imgBox.appendChild(img);
 
-        const info = createElement('div', 'flex-1 min-w-0');
-        const title = createElement('h4', 'text-gray-200 text-sm font-medium line-clamp-2', { textContent: video.title });
-        info.appendChild(title);
+        const info = createElement('div', 'fc-list-info');
+        const title = createElement('h4', 'fc-list-title', { textContent: video.title });
+        const tag = createElement('span', 'text-[10px] text-gray-500 mt-1 block', { textContent: video.channelName });
+        info.appendChild(title); info.appendChild(tag);
 
-        const btn = createElement('button', 'p-2 text-white bg-blue-600 rounded-full hover:bg-blue-500 shrink-0 flex items-center justify-center', { innerHTML: svgPlus });
+        const btn = createElement('button', 'fc-btn fc-btn-blue', { innerHTML: svgPlus });
+        btn.style.padding = '6px';
         btn.onclick = () => addObjToPlaylist(video.id);
 
-        item.appendChild(imgBox);
-        item.appendChild(info);
-        item.appendChild(btn);
+        item.appendChild(imgBox); item.appendChild(info); item.appendChild(btn);
         container.appendChild(item);
       });
     }
@@ -559,41 +520,32 @@
       container.innerHTML = '';
 
       if (state.playlist.length === 0) {
-        container.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-gray-500 space-y-4 p-4 text-center"><i data-lucide="list-video" class="w-12 h-12 opacity-20"></i><p class="text-sm">播放清單空空如也，從左側加入影片吧！</p></div>`;
-        lucide.createIcons();
-        return;
+        container.innerHTML = `<div class="fc-empty-playlist"><i data-lucide="list-video" class="fc-empty-icon"></i><p class="text-sm">播放清單空空如也，從左側加入影片吧！</p></div>`;
+        lucide.createIcons(); return;
       }
 
       state.playlist.forEach((video, idx) => {
         const isActive = idx === state.currentIndex;
-        const baseClass = 'flex gap-2 p-2 rounded-lg transition items-center border ';
-        const item = createElement('div', baseClass + (isActive ? 'bg-gray-800 border-red-500/50 shadow-[inset_4px_0_0_rgba(239,68,68,1)]' : 'bg-gray-800/40 border-transparent hover:bg-gray-800'));
+        const item = createElement('div', `fc-list-item ${isActive ? 'active' : ''}`);
+        const idxSpan = createElement('span', 'fc-list-idx', { textContent: idx + 1 });
 
-        const idxSpan = createElement('span', 'text-gray-500 text-xs w-5 text-center font-mono shrink-0', { textContent: idx + 1 });
-
-        const imgBox = createElement('div', 'w-16 h-12 shrink-0 bg-black rounded overflow-hidden relative');
-        const img = createElement('img', 'w-full h-full object-cover absolute inset-0', { src: video.thumbnail });
+        const imgBox = createElement('div', 'fc-list-thumb-small');
+        const img = createElement('img', 'fc-thumb-img', { src: video.thumbnail });
         img.onerror = function() { this.src = 'https://img.youtube.com/vi/' + video.id + '/hqdefault.jpg'; };
         imgBox.appendChild(img);
 
-        const info = createElement('div', 'flex-1 min-w-0');
-        const title = createElement('h4', `text-sm font-medium line-clamp-2 ${isActive ? 'text-white' : 'text-gray-300'}`, { textContent: video.title });
+        const info = createElement('div', 'fc-list-info');
+        const title = createElement('h4', `fc-list-title ${isActive ? 'active' : ''}`, { textContent: video.title });
         info.appendChild(title);
 
-        const actions = createElement('div', 'flex items-center gap-1 shrink-0');
-        const playBtn = createElement('button', 'p-1.5 text-gray-300 hover:text-white hover:bg-red-600 rounded transition flex items-center justify-center', { title: '立即播放', innerHTML: svgPlay });
+        const actions = createElement('div', 'fc-list-actions');
+        const playBtn = createElement('button', 'fc-icon-btn fc-icon-btn-play', { title: '立即播放', innerHTML: svgPlay });
         playBtn.onclick = () => { playVideoByIndex(idx); switchTab('player'); };
-        
-        const delBtn = createElement('button', 'p-1.5 text-gray-400 hover:text-red-400 hover:bg-gray-700 rounded transition flex items-center justify-center', { title: '移除', innerHTML: svgX });
+        const delBtn = createElement('button', 'fc-icon-btn fc-icon-btn-del', { title: '移除', innerHTML: svgX });
         delBtn.onclick = () => removeFromPlaylist(idx);
 
-        actions.appendChild(playBtn);
-        actions.appendChild(delBtn);
-        
-        item.appendChild(idxSpan);
-        item.appendChild(imgBox);
-        item.appendChild(info);
-        item.appendChild(actions);
+        actions.appendChild(playBtn); actions.appendChild(delBtn);
+        item.appendChild(idxSpan); item.appendChild(imgBox); item.appendChild(info); item.appendChild(actions);
         container.appendChild(item);
       });
     }
@@ -602,10 +554,8 @@
     function addObjToPlaylist(id) {
       const video = state.masterList.find(v => v.id === id);
       if (video) {
-        state.playlist.push(video);
-        saveState('playlist', state.playlist);
-        if (state.playlist.length === 1) playVideoByIndex(0);
-        else updateAllUI();
+        state.playlist.push(video); saveState('playlist', state.playlist);
+        if (state.playlist.length === 1) playVideoByIndex(0); else updateAllUI();
       }
     }
 
@@ -621,12 +571,9 @@
     function removeFromPlaylist(index) {
       state.playlist.splice(index, 1);
       if (state.currentIndex >= index && state.currentIndex > 0) state.currentIndex -= 1;
-      saveState('playlist', state.playlist);
-      saveState('currentIndex', state.currentIndex);
-      
+      saveState('playlist', state.playlist); saveState('currentIndex', state.currentIndex);
       if (state.playlist.length === 0) {
-        updateAllUI();
-        if (isPlayerReady && player && player.stopVideo) player.stopVideo();
+        updateAllUI(); if (isPlayerReady && player && player.stopVideo) player.stopVideo();
       } else {
         if(index === state.currentIndex + 1 || index === state.currentIndex) playVideoByIndex(state.currentIndex);
         else updateAllUI();
@@ -634,12 +581,9 @@
     }
 
     function clearPlaylist() {
-      state.playlist = [];
-      state.currentIndex = 0;
-      saveState('playlist', state.playlist);
-      saveState('currentIndex', state.currentIndex);
-      updateAllUI();
-      if (isPlayerReady && player && player.stopVideo) player.stopVideo();
+      state.playlist = []; state.currentIndex = 0;
+      saveState('playlist', state.playlist); saveState('currentIndex', state.currentIndex);
+      updateAllUI(); if (isPlayerReady && player && player.stopVideo) player.stopVideo();
     }
 
     function deleteFromMaster(id) {
@@ -648,8 +592,7 @@
         saveState('masterList', state.masterList);
         state.playlist = state.playlist.filter(v => v.id !== id);
         if(state.currentIndex >= state.playlist.length) state.currentIndex = 0;
-        saveState('playlist', state.playlist);
-        saveState('currentIndex', state.currentIndex);
+        saveState('playlist', state.playlist); saveState('currentIndex', state.currentIndex);
         updateAllUI();
       }
     }
@@ -662,31 +605,28 @@
 
       const btn = document.getElementById('btn-add-manual');
       const text = document.getElementById('add-manual-text');
-      btn.disabled = true;
-      text.innerText = "抓取中...";
+      btn.disabled = true; text.innerText = "抓取中...";
 
       let videoId = url;
       if (url.includes('v=')) videoId = new URLSearchParams(url.split('?')[1]).get('v');
       else if (url.includes('youtu.be/')) videoId = url.split('youtu.be/')[1].split('?')[0];
       
       if (!videoId || videoId.length < 10) {
-        alert('無效的 YouTube 網址！');
-        resetManualBtn(); return;
+        alert('無效的 YouTube 網址！'); resetManualBtn(); return;
       }
       if (state.masterList.some(v => v.id === videoId)) {
-        alert('這部影片已經在您的影片庫中了！');
-        resetManualBtn(); input.value = ''; return;
+        alert('這部影片已經在您的影片庫中了！'); resetManualBtn(); input.value = ''; return;
       }
 
       try {
         const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
         const data = await res.json();
-        const newVideo = { id: videoId, title: data.title || `新增影片 (${videoId})`, thumbnail: data.thumbnail_url || `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` };
+        const newVideo = { id: videoId, title: data.title || `新增影片 (${videoId})`, thumbnail: data.thumbnail_url || `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`, channelName: '特選影片' };
         state.masterList.unshift(newVideo);
         saveState('masterList', state.masterList);
-        input.value = ''; updateAllUI(); alert('加入成功！');
+        input.value = ''; updateAllUI(); alert('已成功加入「特選影片」！');
       } catch(e) {
-        const newVideo = { id: videoId, title: `影片 (${videoId})`, thumbnail: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` };
+        const newVideo = { id: videoId, title: `影片 (${videoId})`, thumbnail: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`, channelName: '特選影片' };
         state.masterList.unshift(newVideo);
         saveState('masterList', state.masterList);
         input.value = ''; updateAllUI();
@@ -701,7 +641,7 @@
       btn.disabled = false; text.innerText = "加入";
     }
 
-    // --- 7. 設定與 YouTube API 同步邏輯 ---
+    // --- 7. 設定與多頻道同步邏輯 ---
     function saveSettings() {
       state.settings.apiKey = document.getElementById('api-key-input').value;
       saveState('settings', state.settings);
@@ -709,17 +649,21 @@
 
     async function syncChannel() {
       if (!state.settings.apiKey) { alert("請先輸入 YouTube API Key"); return; }
+      const targetChannel = document.getElementById('sync-channel-input').value.trim();
+      if (!targetChannel) { alert("請輸入要同步的目標頻道代號！"); return; }
+
       const btn = document.getElementById('btn-sync');
       const text = document.getElementById('sync-text');
       btn.disabled = true; text.innerText = "正在通訊抓取資料...";
 
       try {
-        const res1 = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=%40famidoc&type=channel&key=${state.settings.apiKey}`);
+        const res1 = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(targetChannel)}&type=channel&key=${state.settings.apiKey}`);
         const data1 = await res1.json();
         if (data1.error) throw new Error(data1.error.message);
-        if (!data1.items || data1.items.length === 0) throw new Error('找不到頻道 @famidoc，請確認 API Key 是否有效。');
+        if (!data1.items || data1.items.length === 0) throw new Error(`找不到頻道 ${targetChannel}，請確認代號是否正確。`);
         
         const channelId = data1.items[0].snippet.channelId;
+        const actualChannelTitle = data1.items[0].snippet.channelTitle;
         const uploadsId = channelId.replace('UC', 'UU');
         
         let allVideos = [];
@@ -730,7 +674,7 @@
           if (data2.items) {
             const fetched = data2.items.map(item => {
               const vid = item.snippet.resourceId.videoId;
-              return { id: vid, title: item.snippet.title || '未知影片', thumbnail: item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url || `https://img.youtube.com/vi/${vid}/mqdefault.jpg` };
+              return { id: vid, title: item.snippet.title || '未知影片', thumbnail: item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url || `https://img.youtube.com/vi/${vid}/mqdefault.jpg`, channelName: actualChannelTitle };
             });
             allVideos = [...allVideos, ...fetched];
           }
@@ -743,11 +687,11 @@
         state.masterList = Array.from(map.values());
         
         saveState('masterList', state.masterList);
-        updateAllUI(); alert(`同步成功！已為您抓取 ${allVideos.length} 部影片。`);
+        updateAllUI(); alert(`同步成功！已為您從 ${actualChannelTitle} 抓取 ${allVideos.length} 部影片。`);
       } catch(e) {
         alert("同步失敗: " + e.message);
       } finally {
-        btn.disabled = false; text.innerText = "立即同步頻道影片";
+        btn.disabled = false; text.innerText = "立即同步該頻道";
       }
     }
 
@@ -755,7 +699,7 @@
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state.masterList));
       const node = document.createElement('a');
       node.setAttribute("href", dataStr);
-      node.setAttribute("download", "famidoc_videos_backup.json");
+      node.setAttribute("download", "my_yt_player_backup.json");
       document.body.appendChild(node); node.click(); node.remove();
     }
 
@@ -769,7 +713,12 @@
           if (Array.isArray(imported)) {
             const map = new Map();
             state.masterList.forEach(v => map.set(v.id, v));
-            imported.forEach(v => { if (v.id && v.title) map.set(v.id, v); });
+            imported.forEach(v => { 
+                if (v.id && v.title) {
+                    v.channelName = v.channelName || '特選影片';
+                    map.set(v.id, v); 
+                }
+            });
             state.masterList = Array.from(map.values());
             saveState('masterList', state.masterList);
             updateAllUI(); alert('資料匯入成功！');
@@ -791,7 +740,6 @@
       document.getElementById(`view-${tabId}`).classList.replace('view-hidden', 'view-active');
     }
 
-    // --- 9. PWA 註冊 ---
     if ('serviceWorker' in navigator && window.isSecureContext) {
       window.addEventListener('load', () => {
         try {
