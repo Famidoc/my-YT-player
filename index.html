@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
-<head>
-  <meta charset="UTF-8">
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>FamiDoc 智慧播放中樞</title>
+  <title>My YT Player</title>
   
   <!-- PWA & App Icon 設定 -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#030712">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="FamiDoc">
+  <meta name="apple-mobile-web-app-title" content="My YT Player">
   <link rel="apple-touch-icon" href="icon-192.png">
 
   <!-- 載入 Tailwind CSS -->
@@ -37,9 +37,10 @@
 
   <!-- ================= 側邊導覽列 ================= -->
   <div class="w-full md:w-64 bg-gray-900 border-t md:border-t-0 md:border-r border-gray-800 flex flex-row md:flex-col z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.5)] md:shadow-2xl shrink-0 h-[68px] md:h-auto order-last md:order-first">
-    <div class="hidden md:block p-6 pb-8">
+    <!-- 將 md:block 改為 md:flex flex-col items-center 讓整個區塊置中 -->
+    <div class="hidden md:flex flex-col items-center p-6 pb-8 text-center">
       <h1 class="text-2xl font-black text-white flex items-center gap-2 tracking-tight">
-        <i data-lucide="youtube" class="text-red-500 w-8 h-8"></i> FamiDoc <span class="text-xs bg-red-600 text-white px-2 py-0.5 rounded-full ml-1 align-middle">v13 抗毒版</span>
+        <i data-lucide="youtube" class="text-red-500 w-8 h-8"></i> My YT Player
       </h1>
       <p class="text-xs text-gray-500 mt-1 uppercase tracking-wider font-semibold">智慧播放中樞</p>
     </div>
@@ -246,7 +247,7 @@
         videoId: initialVideoId,
         playerVars: { 'autoplay': 1, 'enablejsapi': 1, 'rel': 0 },
         events: {
-          'onReady': () => { isPlayerReady = true; checkPlayerVisibility(); },
+          'onReady': () => { isPlayerReady = true; },
           'onStateChange': onPlayerStateChange
         }
       });
