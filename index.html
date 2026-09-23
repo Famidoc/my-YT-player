@@ -863,7 +863,7 @@
         infoContainer.innerHTML = `
           <div class="relative shrink-0 bg-black rounded shadow overflow-hidden w-12 h-8 md:w-16 md:h-12 hidden sm:block">
              <img src="${escapeHTML(currentVideo.thumbnail)}" class="absolute inset-0 w-full h-full object-cover" />
-             ${currentVideo.durationFormatted ? `<span class="absolute bottom-0.5 right-0.5 bg-black/80 text-[9px] font-mono px-0.5 rounded text-white">${currentVideo.durationFormatted}</span>` : ''}
+             ${currentVideo.durationFormatted ? `<span class="absolute bottom-0.5 right-0.5 z-10 bg-black/80 text-[9px] font-mono px-0.5 rounded text-white">${currentVideo.durationFormatted}</span>` : ''}
           </div>
           <div class="flex-1 min-w-0 text-center md:text-left">
             <h3 class="font-semibold text-gray-100 truncate text-sm md:text-base" title="${escapeHTML(currentVideo.title)}">${escapeHTML(currentVideo.title)}</h3>
@@ -964,7 +964,7 @@
             <!-- 絕對固定尺寸的縮圖，附帶影片長度標籤 -->
             <div class="relative shrink-0 bg-black rounded shadow overflow-hidden w-24 h-[54px] md:w-32 md:h-[72px]">
                 <img src="${escapeHTML(video.thumbnail)}" class="absolute inset-0 w-full h-full object-cover" onerror="this.src='https://img.youtube.com/vi/${escapeHTML(video.id)}/hqdefault.jpg'" />
-                ${video.durationFormatted ? `<span class="absolute bottom-1 right-1 bg-black/80 text-white text-[10px] font-mono px-1 rounded shadow">${video.durationFormatted}</span>` : ''}
+                ${video.durationFormatted ? `<span class="absolute bottom-1 right-1 z-10 bg-black/80 text-white text-[10px] font-mono px-1 rounded shadow">${video.durationFormatted}</span>` : ''}
             </div>
             
             <!-- 標題與標籤及數據區域 -->
@@ -1014,7 +1014,7 @@
           <div class="flex gap-2 md:gap-3 bg-gray-800/60 p-2 rounded-lg hover:bg-gray-750 transition-colors group items-center border border-transparent hover:border-gray-700">
             <div class="relative shrink-0 bg-black rounded shadow overflow-hidden w-24 h-[54px]">
                 <img src="${escapeHTML(video.thumbnail)}" class="absolute inset-0 w-full h-full object-cover" onerror="this.src='https://img.youtube.com/vi/${escapeHTML(video.id)}/hqdefault.jpg'" />
-                ${video.durationFormatted ? `<span class="absolute bottom-1 right-1 bg-black/80 text-white text-[9px] font-mono px-1 rounded shadow">${video.durationFormatted}</span>` : ''}
+                ${video.durationFormatted ? `<span class="absolute bottom-1 right-1 z-10 bg-black/80 text-white text-[9px] font-mono px-1 rounded shadow">${video.durationFormatted}</span>` : ''}
             </div>
             <div class="flex-1 min-w-0">
               <h4 class="font-medium text-xs md:text-sm text-gray-200 line-clamp-2">${escapeHTML(video.title)}</h4>
@@ -1082,7 +1082,7 @@
 
             <div class="relative shrink-0 bg-black rounded shadow overflow-hidden w-16 h-9">
                 <img src="${escapeHTML(video.thumbnail)}" class="absolute inset-0 w-full h-full object-cover" onerror="this.src='https://img.youtube.com/vi/${escapeHTML(video.id)}/hqdefault.jpg'" />
-                ${video.durationFormatted ? `<span class="absolute bottom-0.5 right-0.5 bg-black/80 text-[8px] font-mono px-0.5 rounded text-white">${video.durationFormatted}</span>` : ''}
+                ${video.durationFormatted ? `<span class="absolute bottom-0.5 right-0.5 z-10 bg-black/80 text-[8px] font-mono px-0.5 rounded text-white">${video.durationFormatted}</span>` : ''}
             </div>
             
             <div class="flex-1 min-w-0">
