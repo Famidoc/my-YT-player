@@ -77,6 +77,11 @@
     <div id="view-player" class="view-container view-active flex flex-col p-3 md:p-6 w-full">
       <div class="flex-1 bg-black rounded-xl overflow-hidden shadow-2xl relative border border-gray-800 flex items-center justify-center min-h-0" id="player-wrapper">
         <div id="yt-player" class="w-full h-full absolute inset-0 transition-opacity duration-300 opacity-100"></div>
+        <!-- 斷點續播提示 Toast -->
+        <div id="resume-toast" class="absolute top-4 left-1/2 -translate-x-1/2 bg-gray-900/90 text-white border border-blue-500/50 shadow-2xl px-4 py-2 rounded-full text-xs md:text-sm flex items-center gap-2 transition-all duration-300 opacity-0 pointer-events-none z-30 backdrop-blur-sm">
+          <i data-lucide="history" class="w-4 h-4 text-blue-400"></i>
+          <span id="resume-toast-text">已為您恢復至上次播放進度</span>
+        </div>
         <div id="no-video-msg" class="absolute flex-col items-center justify-center text-gray-500 gap-4 flex hidden p-4 text-center">
           <i data-lucide="youtube" class="w-12 h-12 md:w-16 md:h-16 opacity-20"></i>
           <p class="text-sm md:text-base">目前沒有影片。請前往「建立清單」加入影片！</p>
@@ -114,11 +119,34 @@
       </div>
 
       <div class="w-full md:w-1/2 flex-1 flex flex-col bg-gray-900/80 rounded-xl border border-gray-800 p-3 md:p-5 shadow-lg min-h-0">
-        <div class="flex items-center justify-between mb-3 shrink-0">
-          <h2 class="text-base md:text-xl font-bold flex items-center gap-2 text-gray-100"><i data-lucide="list-video" class="w-5 h-5 text-red-500"></i> 播放清單 (<span id="playlist-count">0</span>)</h2>
-          <button onclick="clearPlaylist()" class="text-xs md:text-sm text-gray-400 hover:text-red-400 transition flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-800">
-            <i data-lucide="trash-2" class="w-4 h-4"></i> 全部清空
-          </button>
+        <!-- 🌟 多組命名播放清單控制列 -->
+        <div class="flex flex-col gap-2 mb-3 shrink-0">
+          <div class="flex items-center justify-between gap-2 flex-wrap">
+            <div class="flex items-center gap-2">
+              <i data-lucide="list-video" class="w-5 h-5 text-red-500"></i>
+              <select id="playlist-select" onchange="switchPlaylist(this.value)" class="bg-gray-800 border border-gray-700 text-white text-xs md:text-sm rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-red-500 max-w-[150px] sm:max-w-[200px] truncate font-medium">
+              </select>
+            </div>
+            <div class="flex items-center gap-1">
+              <button onclick="promptCreatePlaylist()" class="p-1.5 text-xs text-gray-300 bg-gray-800 hover:bg-gray-700 hover:text-white rounded border border-gray-700 transition flex items-center gap-1" title="新增播放清單">
+                <i data-lucide="plus" class="w-3.5 h-3.5 text-green-400"></i> <span class="hidden sm:inline">新增</span>
+              </button>
+              <button onclick="promptRenamePlaylist()" class="p-1.5 text-xs text-gray-300 bg-gray-800 hover:bg-gray-700 hover:text-white rounded border border-gray-700 transition flex items-center gap-1" title="重新命名目前清單">
+                <i data-lucide="edit-3" class="w-3.5 h-3.5 text-blue-400"></i> <span class="hidden sm:inline">重命名</span>
+              </button>
+              <button onclick="confirmDeletePlaylist()" class="p-1.5 text-xs text-red-400 bg-gray-800 hover:bg-red-900/40 hover:text-white rounded border border-gray-700 transition flex items-center gap-1" title="刪除目前清單">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
+              <button onclick="clearPlaylist()" class="p-1.5 text-xs text-gray-400 hover:text-red-400 rounded transition flex items-center gap-1 hover:bg-gray-800 ml-1" title="清空目前清單所有影片">
+                <i data-lucide="x-circle" class="w-3.5 h-3.5"></i> <span class="hidden sm:inline">清空</span>
+              </button>
+            </div>
+          </div>
+          <!-- 統計資訊列：總影片數與累計時間 -->
+          <div class="flex items-center justify-between text-[11px] text-gray-400 px-1">
+            <span>共 <span id="playlist-count" class="text-gray-200 font-mono">0</span> 部影片 · 總時長: <span id="playlist-total-duration" class="text-blue-400 font-medium">0 分鐘</span></span>
+            <span class="text-[10px] text-gray-500 hidden sm:inline">可拖曳項目或使用 ▲▼ 排序</span>
+          </div>
         </div>
         <div id="playlist-container" class="flex-1 overflow-y-auto pr-1 space-y-2 custom-scrollbar"></div>
       </div>
@@ -155,6 +183,10 @@
                  </label>
                  <select id="library-sort-select" onchange="changeLibrarySort(this.value)" class="bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded px-2.5 py-1 focus:outline-none focus:border-blue-500">
                    <option value="default">預設 (加入順序)</option>
+                   <option value="published-desc">發布日期 (最新)</option>
+                   <option value="published-asc">發布日期 (最舊)</option>
+                   <option value="duration-desc">影片長度 (最長)</option>
+                   <option value="duration-asc">影片長度 (最短)</option>
                    <option value="views-desc">觀看數 (最高)</option>
                    <option value="likes-desc">按讚數 (最高)</option>
                    <option value="comments-desc">留言數 (最高)</option>
@@ -242,11 +274,44 @@
     }
 
     // --- 1. 狀態與資料清洗 ---
+    function parseISO8601Duration(durationStr) {
+      if (!durationStr) return 0;
+      const match = durationStr.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+      if (!match) return 0;
+      const hours = parseInt(match[1] || 0, 10);
+      const minutes = parseInt(match[2] || 0, 10);
+      const seconds = parseInt(match[3] || 0, 10);
+      return hours * 3600 + minutes * 60 + seconds;
+    }
+
+    function formatDuration(totalSeconds) {
+      if (!totalSeconds || totalSeconds <= 0) return '';
+      const h = Math.floor(totalSeconds / 3600);
+      const m = Math.floor((totalSeconds % 3600) / 60);
+      const s = Math.floor(totalSeconds % 60);
+      if (h > 0) {
+        return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+      }
+      return `${m}:${s.toString().padStart(2, '0')}`;
+    }
+
+    function formatPlaylistTotalTime(totalSeconds) {
+      if (!totalSeconds || totalSeconds <= 0) return '0 分鐘';
+      const h = Math.floor(totalSeconds / 3600);
+      const m = Math.floor((totalSeconds % 3600) / 60);
+      if (h > 0) {
+        return `${h} 小時 ${m} 分鐘`;
+      }
+      return `${m} 分鐘`;
+    }
+
     function sanitizeData(list) {
       if (!Array.isArray(list)) return [];
       return list
         .filter(v => v !== null && typeof v === 'object' && v.id)
-        .map(v => ({
+        .map(v => {
+          const durationSec = v.durationSec !== undefined && v.durationSec !== null ? Number(v.durationSec) : 0;
+          return {
             id: String(v.id).trim(),
             title: v.title ? String(v.title).trim() : '未知影片',
             thumbnail: v.thumbnail ? String(v.thumbnail).trim() : `https://img.youtube.com/vi/${v.id}/mqdefault.jpg`,
@@ -254,8 +319,12 @@
             viewCount: v.viewCount !== undefined && v.viewCount !== null ? Number(v.viewCount) : null,
             likeCount: v.likeCount !== undefined && v.likeCount !== null ? Number(v.likeCount) : null,
             commentCount: v.commentCount !== undefined && v.commentCount !== null ? Number(v.commentCount) : null,
+            publishedAt: v.publishedAt ? String(v.publishedAt) : null,
+            durationSec: durationSec,
+            durationFormatted: v.durationFormatted || (durationSec > 0 ? formatDuration(durationSec) : ''),
             statsUpdatedAt: v.statsUpdatedAt ? String(v.statsUpdatedAt) : null
-        }));
+          };
+        });
     }
 
     let savedSettings = { apiKey: '' };
@@ -266,23 +335,78 @@
       }
     } catch(e) {}
 
+    // 多組命名播放清單初始化（無縫相容舊版單一清單）
+    let initialPlaylists = null;
+    try {
+      initialPlaylists = JSON.parse(localStorage.getItem('famidoc_playlists'));
+    } catch(e) {}
+
+    if (!Array.isArray(initialPlaylists) || initialPlaylists.length === 0) {
+      let legacyPlaylist = [];
+      try {
+        legacyPlaylist = JSON.parse(localStorage.getItem('famidoc_playlist')) || [];
+      } catch(e) {}
+      initialPlaylists = [
+        { id: 'default', name: '預設清單', items: sanitizeData(legacyPlaylist) }
+      ];
+    } else {
+      initialPlaylists = initialPlaylists.map(pl => ({
+        id: pl.id || 'default',
+        name: pl.name || '播放清單',
+        items: sanitizeData(pl.items || [])
+      }));
+    }
+
+    let initialActivePlaylistId = localStorage.getItem('famidoc_active_pl') || 'default';
+    if (!initialPlaylists.some(pl => pl.id === initialActivePlaylistId)) {
+      initialActivePlaylistId = initialPlaylists[0].id;
+    }
+
+    let savedProgress = {};
+    try {
+      savedProgress = JSON.parse(localStorage.getItem('famidoc_progress')) || {};
+    } catch(e) {}
+
     let state = {
       masterList: sanitizeData(JSON.parse(localStorage.getItem('famidoc_master')) || []),
-      playlist: sanitizeData(JSON.parse(localStorage.getItem('famidoc_playlist')) || []),
+      playlists: initialPlaylists,
+      activePlaylistId: initialActivePlaylistId,
       currentIndex: parseInt(localStorage.getItem('famidoc_idx')) || 0,
       playMode: localStorage.getItem('famidoc_mode') || 'sequential',
       librarySort: localStorage.getItem('famidoc_sort') || 'default',
+      playbackProgress: savedProgress,
       settings: savedSettings
     };
+
+    // 便捷存取：state.playlist 自動代理到目前啟用中的播放清單
+    Object.defineProperty(state, 'playlist', {
+      get() {
+        const pl = this.playlists.find(p => p.id === this.activePlaylistId);
+        return pl ? pl.items : [];
+      },
+      set(newItems) {
+        const pl = this.playlists.find(p => p.id === this.activePlaylistId);
+        if (pl) pl.items = newItems;
+      }
+    });
     
     let activeLibraryTab = '全部';
 
     function saveState(key, value) {
       if (key === 'masterList') localStorage.setItem('famidoc_master', JSON.stringify(value));
-      if (key === 'playlist') localStorage.setItem('famidoc_playlist', JSON.stringify(value));
+      if (key === 'playlists') {
+        localStorage.setItem('famidoc_playlists', JSON.stringify(value));
+        localStorage.setItem('famidoc_playlist', JSON.stringify(state.playlist));
+      }
+      if (key === 'playlist') {
+        localStorage.setItem('famidoc_playlists', JSON.stringify(state.playlists));
+        localStorage.setItem('famidoc_playlist', JSON.stringify(state.playlist));
+      }
+      if (key === 'activePlaylistId') localStorage.setItem('famidoc_active_pl', value);
       if (key === 'currentIndex') localStorage.setItem('famidoc_idx', value);
       if (key === 'playMode') localStorage.setItem('famidoc_mode', value);
       if (key === 'librarySort') localStorage.setItem('famidoc_sort', value);
+      if (key === 'playbackProgress') localStorage.setItem('famidoc_progress', JSON.stringify(value));
       if (key === 'settings') localStorage.setItem('famidoc_settings', JSON.stringify(value));
     }
 
@@ -318,7 +442,7 @@
       `;
     }
 
-    // 批次向 YouTube API 抓取影片統計與詳細資訊（每批次最多 50 筆，僅花費 1 配額點數）
+    // 批次向 YouTube API 抓取影片統計、時長與詳細資訊（每批次最多 50 筆，僅花費 1 配額點數）
     async function fetchVideoDetailsBatch(videoIds, apiKey, onProgress) {
       const result = new Map();
       if (!videoIds || videoIds.length === 0 || !apiKey) return result;
@@ -335,7 +459,7 @@
           onProgress(Math.min(i * chunkSize, videoIds.length), videoIds.length);
         }
         const idsParam = chunk.join(',');
-        const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${idsParam}&key=${apiKey}`;
+        const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,contentDetails&id=${idsParam}&key=${apiKey}`;
         try {
           const res = await fetch(url);
           const data = await res.json();
@@ -345,6 +469,7 @@
           }
           if (data.items) {
             data.items.forEach(item => {
+              const durSec = parseISO8601Duration(item.contentDetails?.duration);
               result.set(item.id, {
                 viewCount: item.statistics?.viewCount ? parseInt(item.statistics.viewCount, 10) : 0,
                 likeCount: item.statistics?.likeCount ? parseInt(item.statistics.likeCount, 10) : 0,
@@ -352,6 +477,9 @@
                 title: item.snippet?.title || '',
                 thumbnail: item.snippet?.thumbnails?.medium?.url || item.snippet?.thumbnails?.default?.url || '',
                 channelName: item.snippet?.channelTitle || '',
+                publishedAt: item.snippet?.publishedAt || null,
+                durationSec: durSec,
+                durationFormatted: formatDuration(durSec),
                 statsUpdatedAt: new Date().toISOString()
               });
             });
@@ -379,21 +507,73 @@
     // --- 2. YouTube Iframe API 初始化與控制 ---
     let player;
     let isPlayerReady = false;
+    let progressInterval = null;
 
     var tag = document.createElement('script');
     tag.src = "https://www.youtube.com/iframe_api";
     var firstScriptTag = document.getElementsByTagName('script')[0];
     firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
+    function showResumeToast(msg) {
+      const toast = document.getElementById('resume-toast');
+      const text = document.getElementById('resume-toast-text');
+      if (!toast || !text) return;
+      text.innerText = msg;
+      toast.classList.remove('opacity-0', 'pointer-events-none');
+      toast.classList.add('opacity-100');
+      setTimeout(() => {
+        toast.classList.remove('opacity-100');
+        toast.classList.add('opacity-0', 'pointer-events-none');
+      }, 3500);
+    }
+
+    function startProgressTracker() {
+      stopProgressTracker();
+      progressInterval = setInterval(() => {
+        if (isPlayerReady && player && typeof player.getPlayerState === 'function' && player.getPlayerState() === YT.PlayerState.PLAYING) {
+          const currentVideo = state.playlist[state.currentIndex];
+          if (currentVideo && currentVideo.id && typeof player.getCurrentTime === 'function') {
+            const curTime = Math.floor(player.getCurrentTime());
+            const dur = (typeof player.getDuration === 'function') ? player.getDuration() : 0;
+            if (curTime > 3 && (dur === 0 || curTime < dur - 5)) {
+              state.playbackProgress[currentVideo.id] = curTime;
+              saveState('playbackProgress', state.playbackProgress);
+            }
+          }
+        }
+      }, 3000);
+    }
+
+    function stopProgressTracker() {
+      if (progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+      }
+    }
+
     function onYouTubeIframeAPIReady() {
-      const initialVideoId = state.playlist[state.currentIndex]?.id || '';
+      const initialVideo = state.playlist[state.currentIndex];
+      const initialVideoId = initialVideo?.id || '';
+      const savedSec = (initialVideoId && state.playbackProgress[initialVideoId] > 5) ? state.playbackProgress[initialVideoId] : 0;
+      
       player = new YT.Player('yt-player', {
         height: '100%',
         width: '100%',
         videoId: initialVideoId,
-        playerVars: { 'autoplay': 1, 'enablejsapi': 1, 'rel': 0 },
+        playerVars: {
+          'autoplay': 1,
+          'enablejsapi': 1,
+          'rel': 0,
+          'start': savedSec
+        },
         events: {
-          'onReady': () => { isPlayerReady = true; checkPlayerVisibility(); },
+          'onReady': () => {
+            isPlayerReady = true;
+            checkPlayerVisibility();
+            if (savedSec > 5) {
+              showResumeToast(`已為您恢復至上次播放進度 (${formatDuration(savedSec)})`);
+            }
+          },
           'onStateChange': onPlayerStateChange
         }
       });
@@ -402,10 +582,20 @@
     function onPlayerStateChange(event) {
       if (event.data === YT.PlayerState.PLAYING) {
         updatePlayPauseUI(true);
+        startProgressTracker();
       } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED || event.data === YT.PlayerState.UNSTARTED) {
         updatePlayPauseUI(false);
+        stopProgressTracker();
       }
-      if (event.data === YT.PlayerState.ENDED) handleVideoEnd();
+      if (event.data === YT.PlayerState.ENDED) {
+        // 播放結束時清除該影片的續播記錄
+        const endedVid = state.playlist[state.currentIndex]?.id;
+        if (endedVid && state.playbackProgress[endedVid]) {
+          delete state.playbackProgress[endedVid];
+          saveState('playbackProgress', state.playbackProgress);
+        }
+        handleVideoEnd();
+      }
     }
 
     function handleVideoEnd() {
@@ -420,13 +610,23 @@
     }
 
     // --- 3. 播放控制邏輯 ---
-    function playVideoByIndex(index) {
+    function playVideoByIndex(index, forceSeek = true) {
       if (state.playlist.length === 0) return;
       state.currentIndex = index;
       saveState('currentIndex', index);
-      const videoId = state.playlist[index]?.id;
+      const video = state.playlist[index];
+      const videoId = video?.id;
       if (videoId && isPlayerReady && player && player.loadVideoById) {
-        player.loadVideoById(videoId);
+        const savedSec = (forceSeek && state.playbackProgress[videoId] > 5) ? state.playbackProgress[videoId] : 0;
+        if (savedSec > 5) {
+          player.loadVideoById({
+            videoId: videoId,
+            startSeconds: savedSec
+          });
+          showResumeToast(`已為您恢復至上次播放進度 (${formatDuration(savedSec)})`);
+        } else {
+          player.loadVideoById(videoId);
+        }
       }
       updateAllUI();
     }
@@ -491,6 +691,7 @@
     }
 
     function updateAllUI() {
+      renderPlaylistSelector();
       renderLibrary();
       renderSearch();
       renderPlaylist();
@@ -499,29 +700,180 @@
       lucide.createIcons();
     }
 
+    function renderPlaylistSelector() {
+      const sel = document.getElementById('playlist-select');
+      if (!sel) return;
+      sel.innerHTML = state.playlists.map(pl => {
+        const isSelected = pl.id === state.activePlaylistId;
+        return `<option value="${escapeHTML(pl.id)}" ${isSelected ? 'selected' : ''}>${escapeHTML(pl.name)} (${pl.items.length})</option>`;
+      }).join('');
+    }
+
+    function promptCreatePlaylist() {
+      const name = prompt('請輸入新播放清單名稱：', `播放清單 ${state.playlists.length + 1}`);
+      if (!name || !name.trim()) return;
+      const newId = 'pl_' + Date.now();
+      state.playlists.push({
+        id: newId,
+        name: name.trim(),
+        items: []
+      });
+      state.activePlaylistId = newId;
+      state.currentIndex = 0;
+      saveState('playlists', state.playlists);
+      saveState('activePlaylistId', state.activePlaylistId);
+      saveState('currentIndex', state.currentIndex);
+      updateAllUI();
+      alert(`已建立並切換至「${name.trim()}」！`);
+    }
+
+    function promptRenamePlaylist() {
+      const currentPl = state.playlists.find(p => p.id === state.activePlaylistId);
+      if (!currentPl) return;
+      const newName = prompt('請輸入播放清單新名稱：', currentPl.name);
+      if (!newName || !newName.trim() || newName.trim() === currentPl.name) return;
+      currentPl.name = newName.trim();
+      saveState('playlists', state.playlists);
+      updateAllUI();
+    }
+
+    function confirmDeletePlaylist() {
+      if (state.playlists.length <= 1) {
+        alert('至少需要保留一個播放清單！若要清除內容請點擊「清空」。');
+        return;
+      }
+      const currentPl = state.playlists.find(p => p.id === state.activePlaylistId);
+      if (!currentPl) return;
+      if (confirm(`確定要刪除播放清單「${currentPl.name}」嗎？（內含 ${currentPl.items.length} 部影片）`)) {
+        state.playlists = state.playlists.filter(p => p.id !== state.activePlaylistId);
+        state.activePlaylistId = state.playlists[0].id;
+        state.currentIndex = 0;
+        saveState('playlists', state.playlists);
+        saveState('activePlaylistId', state.activePlaylistId);
+        saveState('currentIndex', state.currentIndex);
+        updateAllUI();
+      }
+    }
+
+    function switchPlaylist(playlistId) {
+      if (!state.playlists.some(p => p.id === playlistId)) return;
+      state.activePlaylistId = playlistId;
+      state.currentIndex = 0;
+      saveState('activePlaylistId', state.activePlaylistId);
+      saveState('currentIndex', state.currentIndex);
+      updateAllUI();
+      if (state.playlist.length > 0) {
+        playVideoByIndex(0);
+      } else {
+        updatePlayerUI();
+      }
+    }
+
+    // --- 拖曳排序事件處理 ---
+    let draggedItemIndex = null;
+
+    function handleDragStart(e, index) {
+      draggedItemIndex = index;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', index);
+      e.currentTarget.classList.add('opacity-40');
+    }
+
+    function handleDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    }
+
+    function handleDragEnter(e) {
+      e.preventDefault();
+      const item = e.currentTarget.closest('.playlist-drag-item');
+      if (item) item.classList.add('border-blue-500', 'bg-blue-900/30');
+    }
+
+    function handleDragLeave(e) {
+      const item = e.currentTarget.closest('.playlist-drag-item');
+      if (item) item.classList.remove('border-blue-500', 'bg-blue-900/30');
+    }
+
+    function handleDrop(e, targetIndex) {
+      e.preventDefault();
+      const item = e.currentTarget.closest('.playlist-drag-item');
+      if (item) item.classList.remove('border-blue-500', 'bg-blue-900/30');
+
+      if (draggedItemIndex === null || draggedItemIndex === targetIndex) return;
+
+      const items = [...state.playlist];
+      const [moved] = items.splice(draggedItemIndex, 1);
+      items.splice(targetIndex, 0, moved);
+
+      if (state.currentIndex === draggedItemIndex) {
+        state.currentIndex = targetIndex;
+      } else if (draggedItemIndex < state.currentIndex && targetIndex >= state.currentIndex) {
+        state.currentIndex -= 1;
+      } else if (draggedItemIndex > state.currentIndex && targetIndex <= state.currentIndex) {
+        state.currentIndex += 1;
+      }
+
+      state.playlist = items;
+      saveState('playlist', state.playlist);
+      saveState('currentIndex', state.currentIndex);
+      renderPlaylist();
+    }
+
+    function handleDragEnd(e) {
+      draggedItemIndex = null;
+      document.querySelectorAll('.playlist-drag-item').forEach(el => {
+        el.classList.remove('opacity-40', 'border-blue-500', 'bg-blue-900/30');
+      });
+    }
+
+    function movePlaylistItem(idx, direction) {
+      const targetIdx = idx + direction;
+      if (targetIdx < 0 || targetIdx >= state.playlist.length) return;
+      const items = [...state.playlist];
+      const temp = items[idx];
+      items[idx] = items[targetIdx];
+      items[targetIdx] = temp;
+
+      if (state.currentIndex === idx) {
+        state.currentIndex = targetIdx;
+      } else if (state.currentIndex === targetIdx) {
+        state.currentIndex = idx;
+      }
+
+      state.playlist = items;
+      saveState('playlist', state.playlist);
+      saveState('currentIndex', state.currentIndex);
+      renderPlaylist();
+    }
+
     function updatePlayerUI() {
       const currentVideo = state.playlist[state.currentIndex];
       const infoContainer = document.getElementById('now-playing-info');
       const noVideoMsg = document.getElementById('no-video-msg');
       const ytPlayerDiv = document.getElementById('yt-player');
+      const currentPl = state.playlists.find(p => p.id === state.activePlaylistId) || { name: '播放清單' };
 
       if (currentVideo && currentVideo.id) {
-        const viewsStr = currentVideo.viewCount != null ? `<span>· 👁️ ${formatCompactNumber(currentVideo.viewCount)} 次觀看</span>` : '';
-        const likesStr = currentVideo.likeCount != null ? `<span>· 👍 ${formatCompactNumber(currentVideo.likeCount)} 讚</span>` : '';
-        const commentsStr = currentVideo.commentCount != null ? `<span>· 💬 ${formatCompactNumber(currentVideo.commentCount)} 則留言</span>` : '';
+        const durStr = currentVideo.durationFormatted ? `<span>· ⏱️ ${currentVideo.durationFormatted}</span>` : '';
+        const viewsStr = currentVideo.viewCount != null ? `<span>· 👁️ ${formatCompactNumber(currentVideo.viewCount)}</span>` : '';
+        const likesStr = currentVideo.likeCount != null ? `<span>· 👍 ${formatCompactNumber(currentVideo.likeCount)}</span>` : '';
         const updateStr = currentVideo.statsUpdatedAt ? `title="數據更新於: ${new Date(currentVideo.statsUpdatedAt).toLocaleString()}"` : '';
 
         infoContainer.innerHTML = `
           <div class="relative shrink-0 bg-black rounded shadow overflow-hidden w-12 h-8 md:w-16 md:h-12 hidden sm:block">
              <img src="${escapeHTML(currentVideo.thumbnail)}" class="absolute inset-0 w-full h-full object-cover" />
+             ${currentVideo.durationFormatted ? `<span class="absolute bottom-0.5 right-0.5 bg-black/80 text-[9px] font-mono px-0.5 rounded text-white">${currentVideo.durationFormatted}</span>` : ''}
           </div>
           <div class="flex-1 min-w-0 text-center md:text-left">
             <h3 class="font-semibold text-gray-100 truncate text-sm md:text-base" title="${escapeHTML(currentVideo.title)}">${escapeHTML(currentVideo.title)}</h3>
-            <div class="flex items-center justify-center md:justify-start gap-2 flex-wrap text-[10px] md:text-xs text-gray-400 md:mt-1 truncate" ${updateStr}>
-              <span>目前播放: ${state.currentIndex + 1} / ${state.playlist.length} | ${escapeHTML(currentVideo.channelName)}</span>
+            <div class="flex items-center justify-center md:justify-start gap-1.5 flex-wrap text-[10px] md:text-xs text-gray-400 md:mt-1 truncate" ${updateStr}>
+              <span class="text-blue-400 font-medium">[${escapeHTML(currentPl.name)}]</span>
+              <span>${state.currentIndex + 1} / ${state.playlist.length}</span>
+              <span>| ${escapeHTML(currentVideo.channelName)}</span>
+              ${durStr}
               ${viewsStr}
               ${likesStr}
-              ${commentsStr}
             </div>
           </div>
         `;
@@ -579,8 +931,16 @@
 
       let displayList = activeLibraryTab === '全部' ? [...state.masterList] : state.masterList.filter(v => v.channelName === activeLibraryTab);
 
-      // 排序支援
-      if (state.librarySort === 'views-desc') {
+      // 排序支援（發布時間、時長、觀看數、按讚數、留言數、標題）
+      if (state.librarySort === 'published-desc') {
+        displayList.sort((a, b) => new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0));
+      } else if (state.librarySort === 'published-asc') {
+        displayList.sort((a, b) => new Date(a.publishedAt || 0) - new Date(b.publishedAt || 0));
+      } else if (state.librarySort === 'duration-desc') {
+        displayList.sort((a, b) => (b.durationSec || 0) - (a.durationSec || 0));
+      } else if (state.librarySort === 'duration-asc') {
+        displayList.sort((a, b) => (a.durationSec || 0) - (b.durationSec || 0));
+      } else if (state.librarySort === 'views-desc') {
         displayList.sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0));
       } else if (state.librarySort === 'likes-desc') {
         displayList.sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0));
@@ -597,13 +957,14 @@
 
       let html = '';
       displayList.forEach(video => {
-        // 使用與搜尋清單完全相同的排版邏輯，搭配絕對尺寸的固定大小圖片
+        const pubDateStr = video.publishedAt ? `<span class="text-gray-400 text-[10px]" title="發布日期">📅 ${video.publishedAt.split('T')[0]}</span>` : '';
         html += `
           <div class="flex gap-2 md:gap-3 bg-gray-800/60 p-2 rounded-lg hover:bg-gray-750 transition-colors group items-center border border-transparent hover:border-gray-700">
             
-            <!-- 絕對固定尺寸的縮圖，絕對不會被壓扁 -->
+            <!-- 絕對固定尺寸的縮圖，附帶影片長度標籤 -->
             <div class="relative shrink-0 bg-black rounded shadow overflow-hidden w-24 h-[54px] md:w-32 md:h-[72px]">
                 <img src="${escapeHTML(video.thumbnail)}" class="absolute inset-0 w-full h-full object-cover" onerror="this.src='https://img.youtube.com/vi/${escapeHTML(video.id)}/hqdefault.jpg'" />
+                ${video.durationFormatted ? `<span class="absolute bottom-1 right-1 bg-black/80 text-white text-[10px] font-mono px-1 rounded shadow">${video.durationFormatted}</span>` : ''}
             </div>
             
             <!-- 標題與標籤及數據區域 -->
@@ -611,13 +972,14 @@
               <h4 class="font-medium text-xs md:text-sm text-gray-200 line-clamp-2" title="${escapeHTML(video.title)}">${escapeHTML(video.title)}</h4>
               <div class="flex items-center gap-2 flex-wrap mt-1 md:mt-1.5">
                 <span class="inline-block bg-gray-700 text-gray-300 text-[10px] px-2 py-0.5 rounded">${escapeHTML(video.channelName)}</span>
+                ${pubDateStr}
                 ${renderStatsBadge(video)}
               </div>
             </div>
             
             <!-- 按鈕操作區 (加入清單 / 刪除) -->
             <div class="flex gap-1 md:gap-2 shrink-0">
-              <button onclick="addObjToPlaylist('${escapeHTML(video.id)}')" class="p-2 text-white bg-blue-600 md:bg-gray-800 md:text-gray-400 hover:text-white md:hover:bg-blue-600 rounded-full transition-all shadow-md md:shadow-none group-hover:bg-blue-600 group-hover:text-white" title="加入播放清單">
+              <button onclick="addObjToPlaylist('${escapeHTML(video.id)}')" class="p-2 text-white bg-blue-600 md:bg-gray-800 md:text-gray-400 hover:text-white md:hover:bg-blue-600 rounded-full transition-all shadow-md md:shadow-none group-hover:bg-blue-600 group-hover:text-white" title="加入目前播放清單">
                 <i data-lucide="plus" class="w-4 h-4 md:w-5 md:h-5"></i>
               </button>
               <button onclick="deleteFromMaster('${escapeHTML(video.id)}')" class="p-2 text-white bg-red-600 md:bg-gray-800 md:text-gray-400 hover:text-white md:hover:bg-red-600 rounded-full transition-all shadow-md md:shadow-none group-hover:bg-red-600 group-hover:text-white" title="刪除影片">
@@ -652,6 +1014,7 @@
           <div class="flex gap-2 md:gap-3 bg-gray-800/60 p-2 rounded-lg hover:bg-gray-750 transition-colors group items-center border border-transparent hover:border-gray-700">
             <div class="relative shrink-0 bg-black rounded shadow overflow-hidden w-24 h-[54px]">
                 <img src="${escapeHTML(video.thumbnail)}" class="absolute inset-0 w-full h-full object-cover" onerror="this.src='https://img.youtube.com/vi/${escapeHTML(video.id)}/hqdefault.jpg'" />
+                ${video.durationFormatted ? `<span class="absolute bottom-1 right-1 bg-black/80 text-white text-[9px] font-mono px-1 rounded shadow">${video.durationFormatted}</span>` : ''}
             </div>
             <div class="flex-1 min-w-0">
               <h4 class="font-medium text-xs md:text-sm text-gray-200 line-clamp-2">${escapeHTML(video.title)}</h4>
@@ -660,7 +1023,7 @@
                 ${renderStatsBadge(video, true)}
               </div>
             </div>
-            <button onclick="addObjToPlaylist('${escapeHTML(video.id)}')" class="p-2 text-white bg-blue-600 md:bg-gray-800 md:text-gray-400 hover:text-white md:hover:bg-blue-600 rounded-full transition-all shadow-md md:shadow-none shrink-0 group-hover:bg-blue-600 group-hover:text-white" title="加入播放清單">
+            <button onclick="addObjToPlaylist('${escapeHTML(video.id)}')" class="p-2 text-white bg-blue-600 md:bg-gray-800 md:text-gray-400 hover:text-white md:hover:bg-blue-600 rounded-full transition-all shadow-md md:shadow-none shrink-0 group-hover:bg-blue-600 group-hover:text-white" title="加入目前播放清單">
               <i data-lucide="plus" class="w-4 h-4 md:w-5 md:h-5"></i>
             </button>
           </div>
@@ -673,6 +1036,13 @@
     function renderPlaylist() {
       const countEl = document.getElementById('playlist-count');
       if (countEl) countEl.innerText = state.playlist.length;
+      
+      const totalDurEl = document.getElementById('playlist-total-duration');
+      if (totalDurEl) {
+        const totalSec = state.playlist.reduce((sum, v) => sum + (v.durationSec || 0), 0);
+        totalDurEl.innerText = formatPlaylistTotalTime(totalSec);
+      }
+
       const container = document.getElementById('playlist-container');
       if (!container) return;
 
@@ -680,7 +1050,7 @@
         container.innerHTML = `
           <div class="flex flex-col items-center justify-center h-full text-gray-500 space-y-4 p-4 text-center">
              <i data-lucide="list-video" class="w-12 h-12 opacity-20"></i>
-             <p class="text-sm">播放清單空空如也，從左側加入影片吧！</p>
+             <p class="text-sm">此播放清單空空如也，從左側加入影片吧！</p>
           </div>
         `;
         lucide.createIcons();
@@ -696,18 +1066,42 @@
         const activeClassPlayBtn = isActive ? 'text-white bg-red-600/80' : 'text-gray-400 bg-transparent';
         
         html += `
-          <div class="flex gap-2 md:gap-3 p-2 rounded-lg transition-colors items-center border ${activeClassBg} ${activeClassBorder} group">
-            <span class="text-gray-500 text-xs w-4 md:w-5 text-center font-mono shrink-0">${idx + 1}</span>
+          <div class="flex gap-2 md:gap-3 p-2 rounded-lg transition-all items-center border ${activeClassBg} ${activeClassBorder} group playlist-drag-item select-none"
+               draggable="true"
+               data-index="${idx}"
+               ondragstart="handleDragStart(event, ${idx})"
+               ondragover="handleDragOver(event)"
+               ondragenter="handleDragEnter(event)"
+               ondragleave="handleDragLeave(event)"
+               ondrop="handleDrop(event, ${idx})"
+               ondragend="handleDragEnd(event)">
+            
+            <div class="flex flex-col items-center justify-center gap-0.5 shrink-0 text-gray-500 hover:text-gray-300">
+              <span class="text-xs w-4 text-center font-mono cursor-grab" title="拖曳以排序">${idx + 1}</span>
+            </div>
+
             <div class="relative shrink-0 bg-black rounded shadow overflow-hidden w-16 h-9">
                 <img src="${escapeHTML(video.thumbnail)}" class="absolute inset-0 w-full h-full object-cover" onerror="this.src='https://img.youtube.com/vi/${escapeHTML(video.id)}/hqdefault.jpg'" />
+                ${video.durationFormatted ? `<span class="absolute bottom-0.5 right-0.5 bg-black/80 text-[8px] font-mono px-0.5 rounded text-white">${video.durationFormatted}</span>` : ''}
             </div>
+            
             <div class="flex-1 min-w-0">
-              <h4 class="font-medium text-xs md:text-sm line-clamp-2 ${activeClassText}">${escapeHTML(video.title)}</h4>
+              <h4 class="font-medium text-xs md:text-sm line-clamp-2 ${activeClassText}" title="${escapeHTML(video.title)}">${escapeHTML(video.title)}</h4>
               <div class="flex items-center gap-1.5 mt-0.5">
                 ${renderStatsBadge(video, true)}
               </div>
             </div>
-            <div class="flex items-center gap-1 opacity-100 md:opacity-50 group-hover:opacity-100 transition-opacity shrink-0">
+            
+            <!-- 操作區：行動端上下微調 + 播放 + 刪除 -->
+            <div class="flex items-center gap-1 shrink-0">
+              <div class="flex flex-col">
+                <button onclick="movePlaylistItem(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} class="p-0.5 text-gray-500 hover:text-white disabled:opacity-20" title="上移">
+                  <i data-lucide="chevron-up" class="w-3.5 h-3.5"></i>
+                </button>
+                <button onclick="movePlaylistItem(${idx}, 1)" ${idx === state.playlist.length - 1 ? 'disabled' : ''} class="p-0.5 text-gray-500 hover:text-white disabled:opacity-20" title="下移">
+                  <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
               <button onclick="playVideoByIndex(${idx}); switchTab('player');" class="p-1.5 ${activeClassPlayBtn} md:bg-transparent hover:text-white md:hover:bg-red-600 rounded transition-colors shadow-md md:shadow-none" title="立即播放">
                 <i data-lucide="play" class="w-4 h-4"></i>
               </button>
@@ -778,9 +1172,11 @@
         state.masterList = state.masterList.filter(v => v.id !== id);
         saveState('masterList', state.masterList);
         
-        state.playlist = state.playlist.filter(v => v.id !== id);
-        if(state.currentIndex >= state.playlist.length) state.currentIndex = 0;
-        saveState('playlist', state.playlist);
+        state.playlists.forEach(pl => {
+          pl.items = pl.items.filter(v => v.id !== id);
+        });
+        if (state.currentIndex >= state.playlist.length) state.currentIndex = 0;
+        saveState('playlists', state.playlists);
         saveState('currentIndex', state.currentIndex);
         
         updateAllUI();
@@ -798,18 +1194,20 @@
       if (confirm(msg)) {
         if (activeLibraryTab === '全部') {
           state.masterList = [];
-          state.playlist = [];
+          state.playlists.forEach(pl => { pl.items = []; });
           state.currentIndex = 0;
         } else {
           const videosToDelete = state.masterList.filter(v => v.channelName === activeLibraryTab).map(v => v.id);
           state.masterList = state.masterList.filter(v => v.channelName !== activeLibraryTab);
-          state.playlist = state.playlist.filter(v => !videosToDelete.includes(v.id));
-          if(state.currentIndex >= state.playlist.length) state.currentIndex = 0;
+          state.playlists.forEach(pl => {
+            pl.items = pl.items.filter(v => !videosToDelete.includes(v.id));
+          });
+          if (state.currentIndex >= state.playlist.length) state.currentIndex = 0;
         }
         
         activeLibraryTab = '全部';
         saveState('masterList', state.masterList);
-        saveState('playlist', state.playlist);
+        saveState('playlists', state.playlists);
         saveState('currentIndex', state.currentIndex);
         updateAllUI();
         alert('分類清空完成！');
@@ -859,13 +1257,16 @@
               viewCount: details.viewCount,
               likeCount: details.likeCount,
               commentCount: details.commentCount,
+              publishedAt: details.publishedAt,
+              durationSec: details.durationSec || 0,
+              durationFormatted: details.durationFormatted || '',
               statsUpdatedAt: details.statsUpdatedAt
             };
             state.masterList.unshift(newVideo);
             saveState('masterList', state.masterList);
             if (input) input.value = '';
             updateAllUI();
-            alert('加入成功！（已同步抓取最新數據分析）');
+            alert('加入成功！（已同步抓取影片時長與最新數據分析）');
             resetManualBtn();
             return;
           }
@@ -990,7 +1391,7 @@
           if (text) text.innerText = `正在分析影片數據 (${loaded}/${total})...`;
         });
 
-        // 將統計數據補入影片物件
+        // 將統計數據與時長補入影片物件
         const allVideos = rawVideos.map(v => {
           const stats = statsMap.get(v.id);
           return {
@@ -998,6 +1399,9 @@
             viewCount: stats ? stats.viewCount : null,
             likeCount: stats ? stats.likeCount : null,
             commentCount: stats ? stats.commentCount : null,
+            publishedAt: stats ? stats.publishedAt : null,
+            durationSec: stats ? (stats.durationSec || 0) : 0,
+            durationFormatted: stats ? (stats.durationFormatted || '') : '',
             statsUpdatedAt: stats ? stats.statsUpdatedAt : new Date().toISOString()
           };
         });
@@ -1015,15 +1419,17 @@
         state.masterList = Array.from(map.values());
         saveState('masterList', state.masterList);
 
-        // 同步更新播放清單中現有影片的統計數據
-        state.playlist = state.playlist.map(pv => {
-          const updated = map.get(pv.id);
-          return updated ? { ...pv, ...updated } : pv;
+        // 同步更新所有播放清單中現有影片的統計數據與時長
+        state.playlists.forEach(pl => {
+          pl.items = pl.items.map(pv => {
+            const updated = map.get(pv.id);
+            return updated ? { ...pv, ...updated } : pv;
+          });
         });
-        saveState('playlist', state.playlist);
+        saveState('playlists', state.playlists);
         
         updateAllUI();
-        alert(`同步成功！已為您抓取並更新 ${allVideos.length} 部影片的最新資訊與數據分析（觀看數、按讚數、留言數）。`);
+        alert(`同步成功！已為您抓取並更新 ${allVideos.length} 部影片的最新資訊、時長與數據分析。`);
 
       } catch(e) {
         alert("同步失敗: " + e.message);
@@ -1065,6 +1471,9 @@
               viewCount: stats.viewCount,
               likeCount: stats.likeCount,
               commentCount: stats.commentCount,
+              publishedAt: stats.publishedAt || v.publishedAt,
+              durationSec: stats.durationSec || v.durationSec || 0,
+              durationFormatted: stats.durationFormatted || v.durationFormatted || '',
               statsUpdatedAt: stats.statsUpdatedAt,
               // 若原先標題為臨時標題，一併修正為 YouTube 官方最新標題
               title: (v.title.startsWith('新增影片') || v.title.startsWith('影片 (')) ? (stats.title || v.title) : v.title,
@@ -1076,13 +1485,15 @@
 
         saveState('masterList', state.masterList);
 
-        // 同步更新播放清單中對應影片的數據
+        // 同步更新所有播放清單中對應影片的數據
         const masterMap = new Map(state.masterList.map(v => [v.id, v]));
-        state.playlist = state.playlist.map(pv => masterMap.get(pv.id) || pv);
-        saveState('playlist', state.playlist);
+        state.playlists.forEach(pl => {
+          pl.items = pl.items.map(pv => masterMap.get(pv.id) || pv);
+        });
+        saveState('playlists', state.playlists);
 
         updateAllUI();
-        alert(`數據刷新成功！已成功更新 ${updatedCount} 部影片的觀看數、按讚數與留言數。`);
+        alert(`數據刷新成功！已成功更新 ${updatedCount} 部影片的時長、觀看數、按讚數與留言數。`);
       } catch(e) {
         alert("刷新失敗: " + e.message);
       } finally {
