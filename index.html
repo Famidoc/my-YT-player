@@ -141,14 +141,26 @@
 
         <div class="flex-1 bg-gray-900 rounded-xl border border-gray-800 p-4 md:p-6 overflow-hidden flex flex-col shadow-lg min-h-[400px]">
            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 shrink-0 gap-3">
-               <div class="flex items-center gap-3">
+               <div class="flex items-center gap-3 flex-wrap">
                  <h3 class="text-sm md:text-lg font-medium text-gray-200">已儲存影片 (<span id="library-count">0</span>)</h3>
                  <!-- 清空分類按鈕 -->
                  <button onclick="clearCurrentCategory()" class="text-xs text-red-400 hover:text-white hover:bg-red-600 transition flex items-center gap-1 bg-red-900/30 px-2 py-1 rounded border border-red-800/50 shadow-sm" title="一鍵清空目前分類的影片">
-                   <i data-lucide="trash-2" class="w-4 h-4"></i> <span>清空此分類</span>
+                   <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> <span>清空此分類</span>
                  </button>
                </div>
-               <span class="text-[10px] md:text-xs text-gray-500 hidden sm:inline">資料儲存在您的瀏覽器中</span>
+               <div class="flex items-center gap-2">
+                 <label class="text-xs text-gray-400 flex items-center gap-1">
+                   <i data-lucide="arrow-down-up" class="w-3.5 h-3.5 text-gray-400"></i>
+                   <span>排序:</span>
+                 </label>
+                 <select id="library-sort-select" onchange="changeLibrarySort(this.value)" class="bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded px-2.5 py-1 focus:outline-none focus:border-blue-500">
+                   <option value="default">預設 (加入順序)</option>
+                   <option value="views-desc">觀看數 (最高)</option>
+                   <option value="likes-desc">按讚數 (最高)</option>
+                   <option value="comments-desc">留言數 (最高)</option>
+                   <option value="title-asc">標題 (A-Z)</option>
+                 </select>
+               </div>
            </div>
            
            <div id="library-tabs" class="flex gap-2 mb-4 overflow-x-auto pb-2 custom-scrollbar shrink-0"></div>
@@ -165,8 +177,8 @@
         <h2 class="text-xl md:text-2xl font-bold mb-6 flex items-center gap-2"><i data-lucide="settings" class="w-6 h-6 text-gray-400"></i> 設定與同步</h2>
         
         <div class="bg-gray-900 rounded-xl border border-gray-800 p-4 md:p-6 mb-6 shadow-lg">
-          <h3 class="text-base md:text-lg font-bold mb-2 flex items-center gap-2 text-white"><i data-lucide="youtube" class="w-5 h-5 text-red-500"></i> 自動同步頻道影片</h3>
-          <p class="text-gray-400 text-xs md:text-sm mb-4">若要自動抓取頻道影片，請提供 API Key。密鑰安全儲存於本地端。</p>
+          <h3 class="text-base md:text-lg font-bold mb-2 flex items-center gap-2 text-white"><i data-lucide="youtube" class="w-5 h-5 text-red-500"></i> 自動同步頻道影片與數據分析</h3>
+          <p class="text-gray-400 text-xs md:text-sm mb-4">抓取頻道影片時將同時取得各影片的觀看數、按讚數與留言數。金鑰僅儲存於本地瀏覽器中。</p>
           
           <div class="flex flex-col gap-3">
             <div>
@@ -175,9 +187,14 @@
             <div>
               <input type="text" id="sync-channel-input" placeholder="目標頻道代號 (例如: @famidoc)" class="w-full bg-gray-950 border border-gray-700 text-gray-100 rounded-lg px-4 py-2 md:py-3 focus:outline-none focus:border-blue-500 transition font-mono text-sm">
             </div>
-            <button id="btn-sync" onclick="syncChannel()" class="bg-red-600 hover:bg-red-500 text-white px-4 md:px-6 py-2 md:py-3 rounded-lg transition font-medium flex items-center justify-center gap-2 w-full sm:w-auto shadow-lg text-sm md:text-base mt-2">
-              <i data-lucide="refresh-cw" class="w-5 h-5" id="sync-icon"></i> <span id="sync-text">立即同步頻道影片</span>
-            </button>
+            <div class="flex flex-col sm:flex-row gap-3 mt-2">
+              <button id="btn-sync" onclick="syncChannel()" class="flex-1 bg-red-600 hover:bg-red-500 text-white px-4 md:px-6 py-2.5 md:py-3 rounded-lg transition font-medium flex items-center justify-center gap-2 shadow-lg text-sm md:text-base">
+                <i data-lucide="refresh-cw" class="w-5 h-5" id="sync-icon"></i> <span id="sync-text">立即同步頻道影片與數據</span>
+              </button>
+              <button id="btn-refresh-stats" onclick="refreshAllVideoStats()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white px-4 md:px-6 py-2.5 md:py-3 rounded-lg transition font-medium flex items-center justify-center gap-2 shadow-lg text-sm md:text-base" title="使用 API 更新影片庫中現有所有影片的最新觀看與點讚數">
+                <i data-lucide="bar-chart-2" class="w-5 h-5" id="refresh-stats-icon"></i> <span id="refresh-stats-text">一鍵刷新所有影片數據</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -233,7 +250,11 @@
             id: String(v.id).trim(),
             title: v.title ? String(v.title).trim() : '未知影片',
             thumbnail: v.thumbnail ? String(v.thumbnail).trim() : `https://img.youtube.com/vi/${v.id}/mqdefault.jpg`,
-            channelName: v.channelName ? String(v.channelName).trim() : '特選影片'
+            channelName: v.channelName ? String(v.channelName).trim() : '特選影片',
+            viewCount: v.viewCount !== undefined && v.viewCount !== null ? Number(v.viewCount) : null,
+            likeCount: v.likeCount !== undefined && v.likeCount !== null ? Number(v.likeCount) : null,
+            commentCount: v.commentCount !== undefined && v.commentCount !== null ? Number(v.commentCount) : null,
+            statsUpdatedAt: v.statsUpdatedAt ? String(v.statsUpdatedAt) : null
         }));
     }
 
@@ -250,6 +271,7 @@
       playlist: sanitizeData(JSON.parse(localStorage.getItem('famidoc_playlist')) || []),
       currentIndex: parseInt(localStorage.getItem('famidoc_idx')) || 0,
       playMode: localStorage.getItem('famidoc_mode') || 'sequential',
+      librarySort: localStorage.getItem('famidoc_sort') || 'default',
       settings: savedSettings
     };
     
@@ -260,7 +282,88 @@
       if (key === 'playlist') localStorage.setItem('famidoc_playlist', JSON.stringify(value));
       if (key === 'currentIndex') localStorage.setItem('famidoc_idx', value);
       if (key === 'playMode') localStorage.setItem('famidoc_mode', value);
+      if (key === 'librarySort') localStorage.setItem('famidoc_sort', value);
       if (key === 'settings') localStorage.setItem('famidoc_settings', JSON.stringify(value));
+    }
+
+    function formatCompactNumber(num) {
+      if (num === null || num === undefined || isNaN(num)) return null;
+      const n = Number(num);
+      if (n >= 100000000) {
+        return (n / 100000000).toFixed(1).replace(/\.0$/, '') + '億';
+      }
+      if (n >= 10000) {
+        return (n / 10000).toFixed(1).replace(/\.0$/, '') + '萬';
+      }
+      if (n >= 1000) {
+        return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+      }
+      return n.toLocaleString();
+    }
+
+    function renderStatsBadge(video, isCompact = false) {
+      if (video.viewCount == null && video.likeCount == null && video.commentCount == null) return '';
+      const views = video.viewCount != null ? formatCompactNumber(video.viewCount) : null;
+      const likes = video.likeCount != null ? formatCompactNumber(video.likeCount) : null;
+      const comments = video.commentCount != null ? formatCompactNumber(video.commentCount) : null;
+
+      if (!views && !likes && !comments) return '';
+
+      return `
+        <div class="flex items-center gap-2 text-[10px] md:text-[11px] text-gray-400 shrink-0">
+          ${views !== null ? `<span class="flex items-center gap-0.5" title="觀看次數: ${Number(video.viewCount).toLocaleString()}"><i data-lucide="eye" class="w-3 h-3 text-sky-400"></i> ${views}</span>` : ''}
+          ${likes !== null ? `<span class="flex items-center gap-0.5" title="按讚數: ${Number(video.likeCount).toLocaleString()}"><i data-lucide="thumbs-up" class="w-3 h-3 text-rose-400"></i> ${likes}</span>` : ''}
+          ${comments !== null && !isCompact ? `<span class="flex items-center gap-0.5" title="留言數: ${Number(video.commentCount).toLocaleString()}"><i data-lucide="message-square" class="w-3 h-3 text-emerald-400"></i> ${comments}</span>` : ''}
+        </div>
+      `;
+    }
+
+    // 批次向 YouTube API 抓取影片統計與詳細資訊（每批次最多 50 筆，僅花費 1 配額點數）
+    async function fetchVideoDetailsBatch(videoIds, apiKey, onProgress) {
+      const result = new Map();
+      if (!videoIds || videoIds.length === 0 || !apiKey) return result;
+
+      const chunkSize = 50;
+      const chunks = [];
+      for (let i = 0; i < videoIds.length; i += chunkSize) {
+        chunks.push(videoIds.slice(i, i + chunkSize));
+      }
+
+      for (let i = 0; i < chunks.length; i++) {
+        const chunk = chunks[i];
+        if (onProgress) {
+          onProgress(Math.min(i * chunkSize, videoIds.length), videoIds.length);
+        }
+        const idsParam = chunk.join(',');
+        const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${idsParam}&key=${apiKey}`;
+        try {
+          const res = await fetch(url);
+          const data = await res.json();
+          if (data.error) {
+            console.error('YouTube API 批次取得數據失敗:', data.error);
+            break;
+          }
+          if (data.items) {
+            data.items.forEach(item => {
+              result.set(item.id, {
+                viewCount: item.statistics?.viewCount ? parseInt(item.statistics.viewCount, 10) : 0,
+                likeCount: item.statistics?.likeCount ? parseInt(item.statistics.likeCount, 10) : 0,
+                commentCount: item.statistics?.commentCount ? parseInt(item.statistics.commentCount, 10) : 0,
+                title: item.snippet?.title || '',
+                thumbnail: item.snippet?.thumbnails?.medium?.url || item.snippet?.thumbnails?.default?.url || '',
+                channelName: item.snippet?.channelTitle || '',
+                statsUpdatedAt: new Date().toISOString()
+              });
+            });
+          }
+        } catch (e) {
+          console.error('批次網路請求失敗:', e);
+        }
+      }
+      if (onProgress) {
+        onProgress(videoIds.length, videoIds.length);
+      }
+      return result;
     }
 
     function escapeHTML(str) {
@@ -365,6 +468,7 @@
     document.addEventListener("DOMContentLoaded", () => {
       const apiKeyInput = document.getElementById('api-key-input');
       const syncChannelInput = document.getElementById('sync-channel-input');
+      const sortSelect = document.getElementById('library-sort-select');
       
       if (apiKeyInput && state.settings) {
         apiKeyInput.value = state.settings.apiKey || '';
@@ -372,10 +476,19 @@
       if (syncChannelInput) {
         syncChannelInput.value = '@famidoc';
       }
+      if (sortSelect) {
+        sortSelect.value = state.librarySort || 'default';
+      }
 
       updateAllUI();
       switchTab('player');
     });
+
+    function changeLibrarySort(sortValue) {
+      state.librarySort = sortValue;
+      saveState('librarySort', state.librarySort);
+      renderLibrary();
+    }
 
     function updateAllUI() {
       renderLibrary();
@@ -393,13 +506,23 @@
       const ytPlayerDiv = document.getElementById('yt-player');
 
       if (currentVideo && currentVideo.id) {
+        const viewsStr = currentVideo.viewCount != null ? `<span>· 👁️ ${formatCompactNumber(currentVideo.viewCount)} 次觀看</span>` : '';
+        const likesStr = currentVideo.likeCount != null ? `<span>· 👍 ${formatCompactNumber(currentVideo.likeCount)} 讚</span>` : '';
+        const commentsStr = currentVideo.commentCount != null ? `<span>· 💬 ${formatCompactNumber(currentVideo.commentCount)} 則留言</span>` : '';
+        const updateStr = currentVideo.statsUpdatedAt ? `title="數據更新於: ${new Date(currentVideo.statsUpdatedAt).toLocaleString()}"` : '';
+
         infoContainer.innerHTML = `
           <div class="relative shrink-0 bg-black rounded shadow overflow-hidden w-12 h-8 md:w-16 md:h-12 hidden sm:block">
              <img src="${escapeHTML(currentVideo.thumbnail)}" class="absolute inset-0 w-full h-full object-cover" />
           </div>
           <div class="flex-1 min-w-0 text-center md:text-left">
             <h3 class="font-semibold text-gray-100 truncate text-sm md:text-base" title="${escapeHTML(currentVideo.title)}">${escapeHTML(currentVideo.title)}</h3>
-            <p class="text-[10px] md:text-xs text-gray-400 md:mt-1 truncate">目前播放: ${state.currentIndex + 1} / ${state.playlist.length} | ${escapeHTML(currentVideo.channelName)}</p>
+            <div class="flex items-center justify-center md:justify-start gap-2 flex-wrap text-[10px] md:text-xs text-gray-400 md:mt-1 truncate" ${updateStr}>
+              <span>目前播放: ${state.currentIndex + 1} / ${state.playlist.length} | ${escapeHTML(currentVideo.channelName)}</span>
+              ${viewsStr}
+              ${likesStr}
+              ${commentsStr}
+            </div>
           </div>
         `;
         noVideoMsg.classList.add('hidden');
@@ -454,7 +577,18 @@
         return;
       }
 
-      const displayList = activeLibraryTab === '全部' ? state.masterList : state.masterList.filter(v => v.channelName === activeLibraryTab);
+      let displayList = activeLibraryTab === '全部' ? [...state.masterList] : state.masterList.filter(v => v.channelName === activeLibraryTab);
+
+      // 排序支援
+      if (state.librarySort === 'views-desc') {
+        displayList.sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0));
+      } else if (state.librarySort === 'likes-desc') {
+        displayList.sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0));
+      } else if (state.librarySort === 'comments-desc') {
+        displayList.sort((a, b) => (b.commentCount || 0) - (a.commentCount || 0));
+      } else if (state.librarySort === 'title-asc') {
+        displayList.sort((a, b) => (a.title || '').localeCompare(b.title || '', 'zh-Hant'));
+      }
 
       if (displayList.length === 0) {
          grid.innerHTML = `<div class="py-10 flex justify-center text-gray-500"><p class="text-sm md:text-base">此分類目前沒有影片。</p></div>`;
@@ -463,7 +597,7 @@
 
       let html = '';
       displayList.forEach(video => {
-        // 使用與搜尋清單完全相同的排版邏輯，搭配絕對尺寸的固定大小圖片 (w-24 h-[54px] 到 md:w-32 md:h-[72px])
+        // 使用與搜尋清單完全相同的排版邏輯，搭配絕對尺寸的固定大小圖片
         html += `
           <div class="flex gap-2 md:gap-3 bg-gray-800/60 p-2 rounded-lg hover:bg-gray-750 transition-colors group items-center border border-transparent hover:border-gray-700">
             
@@ -472,10 +606,13 @@
                 <img src="${escapeHTML(video.thumbnail)}" class="absolute inset-0 w-full h-full object-cover" onerror="this.src='https://img.youtube.com/vi/${escapeHTML(video.id)}/hqdefault.jpg'" />
             </div>
             
-            <!-- 標題與標籤區域 -->
+            <!-- 標題與標籤及數據區域 -->
             <div class="flex-1 min-w-0">
               <h4 class="font-medium text-xs md:text-sm text-gray-200 line-clamp-2" title="${escapeHTML(video.title)}">${escapeHTML(video.title)}</h4>
-              <span class="inline-block bg-gray-700 text-gray-400 text-[10px] px-2 py-0.5 rounded mt-1 md:mt-2">${escapeHTML(video.channelName)}</span>
+              <div class="flex items-center gap-2 flex-wrap mt-1 md:mt-1.5">
+                <span class="inline-block bg-gray-700 text-gray-300 text-[10px] px-2 py-0.5 rounded">${escapeHTML(video.channelName)}</span>
+                ${renderStatsBadge(video)}
+              </div>
             </div>
             
             <!-- 按鈕操作區 (加入清單 / 刪除) -->
@@ -518,7 +655,10 @@
             </div>
             <div class="flex-1 min-w-0">
               <h4 class="font-medium text-xs md:text-sm text-gray-200 line-clamp-2">${escapeHTML(video.title)}</h4>
-              <span class="block text-[10px] text-gray-500 mt-1">${escapeHTML(video.channelName)}</span>
+              <div class="flex items-center gap-2 flex-wrap mt-1">
+                <span class="text-[10px] text-gray-400">${escapeHTML(video.channelName)}</span>
+                ${renderStatsBadge(video, true)}
+              </div>
             </div>
             <button onclick="addObjToPlaylist('${escapeHTML(video.id)}')" class="p-2 text-white bg-blue-600 md:bg-gray-800 md:text-gray-400 hover:text-white md:hover:bg-blue-600 rounded-full transition-all shadow-md md:shadow-none shrink-0 group-hover:bg-blue-600 group-hover:text-white" title="加入播放清單">
               <i data-lucide="plus" class="w-4 h-4 md:w-5 md:h-5"></i>
@@ -563,6 +703,9 @@
             </div>
             <div class="flex-1 min-w-0">
               <h4 class="font-medium text-xs md:text-sm line-clamp-2 ${activeClassText}">${escapeHTML(video.title)}</h4>
+              <div class="flex items-center gap-1.5 mt-0.5">
+                ${renderStatsBadge(video, true)}
+              </div>
             </div>
             <div class="flex items-center gap-1 opacity-100 md:opacity-50 group-hover:opacity-100 transition-opacity shrink-0">
               <button onclick="playVideoByIndex(${idx}); switchTab('player');" class="p-1.5 ${activeClassPlayBtn} md:bg-transparent hover:text-white md:hover:bg-red-600 rounded transition-colors shadow-md md:shadow-none" title="立即播放">
@@ -702,6 +845,36 @@
         return;
       }
 
+      // 若有提供 YouTube API Key，優先利用 videos API 取得完整資料與統計數據
+      if (state.settings && state.settings.apiKey) {
+        try {
+          const statsMap = await fetchVideoDetailsBatch([videoId], state.settings.apiKey);
+          const details = statsMap.get(videoId);
+          if (details) {
+            const newVideo = {
+              id: videoId,
+              title: details.title || `新增影片 (${videoId})`,
+              thumbnail: details.thumbnail || `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
+              channelName: details.channelName || '特選影片',
+              viewCount: details.viewCount,
+              likeCount: details.likeCount,
+              commentCount: details.commentCount,
+              statsUpdatedAt: details.statsUpdatedAt
+            };
+            state.masterList.unshift(newVideo);
+            saveState('masterList', state.masterList);
+            if (input) input.value = '';
+            updateAllUI();
+            alert('加入成功！（已同步抓取最新數據分析）');
+            resetManualBtn();
+            return;
+          }
+        } catch(e) {
+          console.warn('API 抓取單部影片失敗，降級使用 noembed:', e);
+        }
+      }
+
+      // 若無 API Key 或 API 呼叫異常，降級使用 noembed 抓取基礎標題
       try {
         const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
         const data = await res.json();
@@ -710,7 +883,11 @@
           id: videoId,
           title: data.title || `新增影片 (${videoId})`,
           thumbnail: data.thumbnail_url || `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
-          channelName: '特選影片'
+          channelName: '特選影片',
+          viewCount: null,
+          likeCount: null,
+          commentCount: null,
+          statsUpdatedAt: null
         };
         
         state.masterList.unshift(newVideo);
@@ -719,7 +896,16 @@
         updateAllUI();
         alert('加入成功！');
       } catch(e) {
-        const newVideo = { id: videoId, title: `影片 (${videoId})`, thumbnail: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`, channelName: '特選影片' };
+        const newVideo = {
+          id: videoId,
+          title: `影片 (${videoId})`,
+          thumbnail: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
+          channelName: '特選影片',
+          viewCount: null,
+          likeCount: null,
+          commentCount: null,
+          statsUpdatedAt: null
+        };
         state.masterList.unshift(newVideo);
         saveState('masterList', state.masterList);
         if (input) input.value = '';
@@ -740,7 +926,7 @@
     function saveSettings() {
       const apiKeyInput = document.getElementById('api-key-input');
       if (apiKeyInput) {
-        state.settings.apiKey = apiKeyInput.value;
+        state.settings.apiKey = apiKeyInput.value.trim();
         saveState('settings', state.settings);
       }
     }
@@ -758,7 +944,7 @@
       const btn = document.getElementById('btn-sync');
       const text = document.getElementById('sync-text');
       if (btn) btn.disabled = true;
-      if (text) text.innerText = "正在通訊抓取資料...";
+      if (text) text.innerText = "正在通訊搜尋頻道...";
 
       try {
         const res1 = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(targetChannel)}&type=channel&key=${state.settings.apiKey}`);
@@ -770,7 +956,8 @@
         const actualChannelTitle = data1.items[0].snippet.channelTitle;
         const uploadsId = channelId.replace('UC', 'UU');
         
-        let allVideos = [];
+        if (text) text.innerText = "正在擷取影片清單...";
+        let rawVideos = [];
         let pageToken = '';
         do {
           const res2 = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId=${uploadsId}&key=${state.settings.apiKey}${pageToken ? `&pageToken=${pageToken}` : ''}`);
@@ -785,25 +972,122 @@
                 channelName: actualChannelTitle
               };
             });
-            allVideos = [...allVideos, ...fetched];
+            rawVideos = [...rawVideos, ...fetched];
           }
           pageToken = data2.nextPageToken;
         } while (pageToken);
+
+        if (rawVideos.length === 0) {
+          alert('該頻道沒有可播放的公開影片！');
+          return;
+        }
+
+        // 🌟 批次抓取各影片的觀看數、按讚數、留言數
+        const videoIds = rawVideos.map(v => v.id);
+        if (text) text.innerText = `已取得 ${videoIds.length} 部影片，正在抓取數據分析...`;
         
+        const statsMap = await fetchVideoDetailsBatch(videoIds, state.settings.apiKey, (loaded, total) => {
+          if (text) text.innerText = `正在分析影片數據 (${loaded}/${total})...`;
+        });
+
+        // 將統計數據補入影片物件
+        const allVideos = rawVideos.map(v => {
+          const stats = statsMap.get(v.id);
+          return {
+            ...v,
+            viewCount: stats ? stats.viewCount : null,
+            likeCount: stats ? stats.likeCount : null,
+            commentCount: stats ? stats.commentCount : null,
+            statsUpdatedAt: stats ? stats.statsUpdatedAt : new Date().toISOString()
+          };
+        });
+        
+        // 合併入 masterList：以新資料更新已存在影片的數據與資訊
         const map = new Map();
         state.masterList.forEach(v => map.set(v.id, v));
-        allVideos.forEach(v => map.set(v.id, v));
+        allVideos.forEach(v => {
+          const existing = map.get(v.id);
+          map.set(v.id, {
+            ...(existing || {}),
+            ...v
+          });
+        });
         state.masterList = Array.from(map.values());
-        
         saveState('masterList', state.masterList);
+
+        // 同步更新播放清單中現有影片的統計數據
+        state.playlist = state.playlist.map(pv => {
+          const updated = map.get(pv.id);
+          return updated ? { ...pv, ...updated } : pv;
+        });
+        saveState('playlist', state.playlist);
+        
         updateAllUI();
-        alert(`同步成功！已為您抓取 ${allVideos.length} 部影片。`);
+        alert(`同步成功！已為您抓取並更新 ${allVideos.length} 部影片的最新資訊與數據分析（觀看數、按讚數、留言數）。`);
 
       } catch(e) {
         alert("同步失敗: " + e.message);
       } finally {
         if (btn) btn.disabled = false;
-        if (text) text.innerText = "立即同步頻道影片";
+        if (text) text.innerText = "立即同步頻道影片與數據";
+      }
+    }
+
+    // --- 一鍵刷新所有已儲存影片的最新數據分析 ---
+    async function refreshAllVideoStats() {
+      if (!state.settings || !state.settings.apiKey) {
+        alert("請先在上方輸入 YouTube API Key");
+        return;
+      }
+      if (state.masterList.length === 0) {
+        alert("目前影片庫中沒有影片可以更新！");
+        return;
+      }
+
+      const btn = document.getElementById('btn-refresh-stats');
+      const text = document.getElementById('refresh-stats-text');
+      if (btn) btn.disabled = true;
+      if (text) text.innerText = "準備刷新數據...";
+
+      try {
+        const videoIds = state.masterList.map(v => v.id);
+        const statsMap = await fetchVideoDetailsBatch(videoIds, state.settings.apiKey, (loaded, total) => {
+          if (text) text.innerText = `刷新進度 (${loaded}/${total})...`;
+        });
+
+        let updatedCount = 0;
+        state.masterList = state.masterList.map(v => {
+          const stats = statsMap.get(v.id);
+          if (stats) {
+            updatedCount++;
+            return {
+              ...v,
+              viewCount: stats.viewCount,
+              likeCount: stats.likeCount,
+              commentCount: stats.commentCount,
+              statsUpdatedAt: stats.statsUpdatedAt,
+              // 若原先標題為臨時標題，一併修正為 YouTube 官方最新標題
+              title: (v.title.startsWith('新增影片') || v.title.startsWith('影片 (')) ? (stats.title || v.title) : v.title,
+              channelName: (v.channelName === '特選影片' && stats.channelName) ? stats.channelName : v.channelName
+            };
+          }
+          return v;
+        });
+
+        saveState('masterList', state.masterList);
+
+        // 同步更新播放清單中對應影片的數據
+        const masterMap = new Map(state.masterList.map(v => [v.id, v]));
+        state.playlist = state.playlist.map(pv => masterMap.get(pv.id) || pv);
+        saveState('playlist', state.playlist);
+
+        updateAllUI();
+        alert(`數據刷新成功！已成功更新 ${updatedCount} 部影片的觀看數、按讚數與留言數。`);
+      } catch(e) {
+        alert("刷新失敗: " + e.message);
+      } finally {
+        if (btn) btn.disabled = false;
+        if (text) text.innerText = "一鍵刷新所有影片數據";
       }
     }
 
